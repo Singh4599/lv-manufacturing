@@ -168,13 +168,13 @@ export function formatDateRange(start, end) {
 }
 
 /**
- * Generate standard batch number: CODE-DDMMYY-SEQ e.g. PBM-241126-01
+ * Generate standard batch number: {CODE}{MMYY}-{SEQ} e.g. PBM1126-01
  * @param {string} code - Product code e.g. PBM
  * @param {Date|string} dateInput - Production date
  * @param {number} seq - Sequence index (1, 2...)
  * @returns {string}
  */
-export function generateBatchNo(code, dateInput, seq = 1) {
+export function generateBatchNumber(code, dateInput, seq = 1) {
   let d;
   if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
     const [year, month, day] = dateInput.split('-').map(Number);
@@ -183,13 +183,15 @@ export function generateBatchNo(code, dateInput, seq = 1) {
     d = new Date(dateInput);
   }
 
-  const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = String(d.getFullYear()).slice(-2);
   const seqStr = String(seq).padStart(2, '0');
+  const cleanCode = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-  return `${code.toUpperCase()}-${day}${month}${year}-${seqStr}`;
+  return `${cleanCode}${month}${year}-${seqStr}`;
 }
+
+export const generateBatchNo = generateBatchNumber;
 
 /**
  * Generate dispatch reference number e.g. DSP-241126-01

@@ -183,12 +183,6 @@ function renderModalContent() {
         <button class="modal-tab-btn ${activeTab === 'packing' ? 'active' : ''}" data-tab="packing">
           <span class="tab-icon">📦</span> Packing
         </button>
-        <button class="modal-tab-btn ${activeTab === 'dispatch' ? 'active' : ''}" data-tab="dispatch">
-          <span class="tab-icon">🚚</span> Dispatch
-        </button>
-        <button class="modal-tab-btn ${activeTab === 'traceability' ? 'active' : ''}" data-tab="traceability">
-          <span class="tab-icon">🔗</span> Traceability
-        </button>
         <button class="modal-tab-btn ${activeTab === 'registers' ? 'active' : ''}" data-tab="registers">
           <span class="tab-icon">📋</span> All Registers (19)
         </button>
@@ -229,10 +223,6 @@ function renderTabContent(tabKey, b) {
       return renderQualityTab(b);
     case 'packing':
       return renderPackingTab(b);
-    case 'dispatch':
-      return renderDispatchTab(b);
-    case 'traceability':
-      return renderTraceabilityTab(b);
     case 'registers':
       return renderAllRegistersTab(b);
     default:
@@ -320,7 +310,7 @@ function renderOverviewTab(b) {
     let badgeText = '✔ Completed';
 
     if (s.status === 'N/A') {
-      checkIcon = '✔';
+      checkIcon = '–';
       iconClass = 'flow-icon-na';
       badgeClass = 'flow-badge-na';
       badgeText = 'N/A';
@@ -341,24 +331,6 @@ function renderOverviewTab(b) {
       </div>
     `;
   }).join('');
-
-  // Dispatch & Traceability
-  const disp = b.dispatch || {
-    dispatchDate: b.displayDate || formatDate(b.date),
-    dispatchQty: isCompleted ? (b.actualQty || b.plannedQty) : '–',
-    numPacks: isCompleted ? pack.numPacks : '–',
-    dispatchRefNo: `DSP-${b.batchNo}`,
-    status: isCompleted ? 'Dispatched' : 'Pending'
-  };
-
-  const trace = b.traceability || {
-    supplier: 'Multiple',
-    supplierLotNo: 'As per RM',
-    internalRMBatchNo: 'DH-250901, JE-250915, etc.',
-    manufacturingBatchNo: b.batchNo,
-    finishedGoodsBatchNo: b.batchNo,
-    packagingMaterialLot: 'PK-251120-01'
-  };
 
   const ver = b.verification || {
     preparedBy: 'Ramesh Kumar',
@@ -410,7 +382,7 @@ function renderOverviewTab(b) {
             <!-- Packing Details Card -->
             <div class="modal-subcard flex-1">
               <div class="subcard-header">
-                <span class="subcard-icon">📅</span>
+                <span class="subcard-icon">📦</span>
                 <h3 class="subcard-title">Packing Details</h3>
               </div>
               <div class="table-responsive">
@@ -438,7 +410,7 @@ function renderOverviewTab(b) {
             <!-- Yield & Quality Card -->
             <div class="modal-subcard flex-1">
               <div class="subcard-header">
-                <span class="subcard-icon">🎖️</span>
+                <span class="subcard-icon">🎯</span>
                 <h3 class="subcard-title">Yield & Quality</h3>
               </div>
               <div class="yield-quality-split">
@@ -487,54 +459,21 @@ function renderOverviewTab(b) {
 
       </div>
 
-      <!-- Bottom Row: 3 Cards across (Dispatch | Traceability | Remarks & Verification) -->
+      <!-- Bottom Row: 2 Cards (Remarks | Verification) -->
       <div class="overview-bottom-row">
         
-        <!-- Card 1: Dispatch Details -->
-        <div class="modal-subcard">
-          <div class="subcard-header">
-            <span class="subcard-icon">🚚</span>
-            <h3 class="subcard-title">Dispatch Details</h3>
-          </div>
-          <div class="card-kv-list">
-            <div class="kv-line"><span class="kv-k">Dispatch Date</span><span class="kv-c">:</span><span class="kv-v">${disp.dispatchDate || formatDate(b.date)}</span></div>
-            <div class="kv-line"><span class="kv-k">Dispatch Qty</span><span class="kv-c">:</span><span class="kv-v font-mono">${isCompleted ? formatQty(disp.dispatchQty, { decimals: 3 }) : '–'}</span></div>
-            <div class="kv-line"><span class="kv-k">No. of Packs</span><span class="kv-c">:</span><span class="kv-v">${isCompleted ? disp.numPacks : '–'}</span></div>
-            <div class="kv-line"><span class="kv-k">Dispatch Ref. No.</span><span class="kv-c">:</span><span class="kv-v font-mono">${disp.dispatchRefNo}</span></div>
-            <div class="kv-line">
-              <span class="kv-k">Status</span><span class="kv-c">:</span>
-              <span class="status-pill ${isCompleted ? 'badge-completed' : 'badge-pending'}">${disp.status || 'Dispatched'}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Traceability -->
-        <div class="modal-subcard">
-          <div class="subcard-header">
-            <span class="subcard-icon">🔗</span>
-            <h3 class="subcard-title">Traceability</h3>
-          </div>
-          <div class="card-kv-list">
-            <div class="kv-line"><span class="kv-k">Supplier</span><span class="kv-c">:</span><span class="kv-v">${trace.supplier || 'Multiple'}</span></div>
-            <div class="kv-line"><span class="kv-k">Supplier Lot No.</span><span class="kv-c">:</span><span class="kv-v">${trace.supplierLotNo || 'As per RM'}</span></div>
-            <div class="kv-line"><span class="kv-k">Internal RM Batch No.</span><span class="kv-c">:</span><span class="kv-v font-mono text-truncate" title="${trace.internalRMBatchNo}">${trace.internalRMBatchNo}</span></div>
-            <div class="kv-line"><span class="kv-k">Manufacturing Batch No.</span><span class="kv-c">:</span><span class="kv-v font-mono font-bold">${trace.manufacturingBatchNo || b.batchNo}</span></div>
-            <div class="kv-line"><span class="kv-k">Finished Goods Batch No.</span><span class="kv-c">:</span><span class="kv-v font-mono">${trace.finishedGoodsBatchNo || b.batchNo}</span></div>
-            <div class="kv-line"><span class="kv-k">Packaging Material Lot</span><span class="kv-c">:</span><span class="kv-v font-mono">${trace.packagingMaterialLot || 'PK-251120-01'}</span></div>
-          </div>
-        </div>
-
-        <!-- Card 3: Remarks & Verification -->
+        <!-- Card 1: Remarks -->
         <div class="modal-subcard">
           <div class="subcard-header">
             <span class="subcard-icon">💬</span>
             <h3 class="subcard-title">Remarks</h3>
           </div>
           <p class="remarks-text">${b.remarks || 'Batch manufactured as per approved recipe & process.'}</p>
+        </div>
 
-          <div class="subcard-divider"></div>
-
-          <div class="subcard-header mt-2">
+        <!-- Card 2: Verification -->
+        <div class="modal-subcard">
+          <div class="subcard-header">
             <span class="subcard-icon">👥</span>
             <h3 class="subcard-title">Verification</h3>
           </div>
@@ -720,72 +659,7 @@ function renderPackingTab(b) {
 }
 
 /**
- * TAB 5: DISPATCH
- */
-function renderDispatchTab(b) {
-  const disp = b.dispatch || {};
-  return `
-    <div class="modal-subcard mb-4">
-      <div class="subcard-header">
-        <span class="subcard-icon">🚚</span>
-        <h3 class="subcard-title">Finished Goods Dispatch & Outward Register Entry</h3>
-      </div>
-      <div class="card-kv-list max-w-xl">
-        <div class="kv-line"><span class="kv-k">Dispatch Reference No.</span><span class="kv-c">:</span><span class="kv-v font-mono font-bold">${disp.dispatchRefNo || `DSP-${b.batchNo}`}</span></div>
-        <div class="kv-line"><span class="kv-k">Dispatch Date</span><span class="kv-c">:</span><span class="kv-v">${disp.dispatchDate || formatDate(b.date)}</span></div>
-        <div class="kv-line"><span class="kv-k">Total Quantity Dispatched</span><span class="kv-c">:</span><span class="kv-v font-mono">${formatQty(disp.dispatchQty || b.actualQty || b.plannedQty, { decimals: 3 })}</span></div>
-        <div class="kv-line"><span class="kv-k">Master Cartons / Packages</span><span class="kv-c">:</span><span class="kv-v">${disp.numPacks || 10} Units</span></div>
-        <div class="kv-line"><span class="kv-k">Authorized Transporter</span><span class="kv-c">:</span><span class="kv-v">LV Logistics Express (Temp Monitored)</span></div>
-        <div class="kv-line"><span class="kv-k">Destination Distribution Hub</span><span class="kv-c">:</span><span class="kv-v">Central Warehouse Hub – Bay 4</span></div>
-        <div class="kv-line"><span class="kv-k">Vehicle Sanitization Inspection</span><span class="kv-c">:</span><span class="status-pill badge-completed">Passed</span></div>
-        <div class="kv-line"><span class="kv-k">Outward Gate Pass Status</span><span class="kv-c">:</span><span class="status-pill badge-completed">Cleared</span></div>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * TAB 6: TRACEABILITY
- */
-function renderTraceabilityTab(b) {
-  const trace = b.traceability || {};
-  return `
-    <div class="modal-subcard mb-4">
-      <div class="subcard-header">
-        <span class="subcard-icon">🔗</span>
-        <h3 class="subcard-title">End-to-End Chain of Custody & Traceability Matrix</h3>
-      </div>
-      <div class="trace-tree">
-        <div class="trace-node">
-          <span class="trace-node-badge">1. Raw Material Origin</span>
-          <strong>Suppliers:</strong> ${trace.supplier || 'Approved LV Spices Spices Consortium'}<br/>
-          <span class="text-muted">Supplier Lots: ${trace.supplierLotNo || 'COA Verified RM Lots'}</span>
-        </div>
-        <div class="trace-arrow">↓</div>
-        <div class="trace-node">
-          <span class="trace-node-badge">2. Inward Processing & Blending</span>
-          <strong>Internal RM Batches:</strong> <span class="font-mono">${trace.internalRMBatchNo}</span><br/>
-          <span class="text-muted">Formula compliance certified</span>
-        </div>
-        <div class="trace-arrow">↓</div>
-        <div class="trace-node">
-          <span class="trace-node-badge">3. Manufacturing Batch</span>
-          <strong>Manufacturing Batch No:</strong> <span class="font-mono text-burgundy font-bold">${b.batchNo}</span><br/>
-          <span class="text-muted">Production Date: ${b.displayDate || formatDate(b.date)} | Planned: ${formatQty(b.plannedQty)}</span>
-        </div>
-        <div class="trace-arrow">↓</div>
-        <div class="trace-node">
-          <span class="trace-node-badge">4. Packaging & Finished Goods</span>
-          <strong>Finished Goods Lot:</strong> <span class="font-mono">${b.batchNo}</span><br/>
-          <span class="text-muted">Packaging Material Lot: ${trace.packagingMaterialLot || 'PK-251120-01'}</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * TAB 7: ALL REGISTERS (19) (Specific requirement from prompt!)
+ * TAB 5: ALL REGISTERS (19) (Specific requirement from prompt!)
  */
 function renderAllRegistersTab(b) {
   const isCompleted = b.status === 'Completed';

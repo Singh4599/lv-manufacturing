@@ -23,8 +23,8 @@
   --border-color: #EAE7E5;
   --border-subtle: #F0EEEB;
 
-  --status-green-bg: #EAF7ED;
-  --status-green-text: #2E7D32;
+  --status-green-bg: #E6F4EA;
+  --status-green-text: #1B7A36;
   --status-green-border: #A3E0B4;
 
   --status-amber-bg: #FEF3E2;
@@ -641,7 +641,8 @@ input, select {
   border: 1px solid var(--status-amber-border);
 }
 
-.badge-not-recorded {
+.badge-not-recorded,
+.badge-na {
   background-color: var(--status-gray-bg);
   color: var(--status-gray-text);
   border: 1px solid var(--status-gray-border);
@@ -743,6 +744,10 @@ input, select {
   justify-content: center;
   z-index: 1000;
   padding: 16px;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
 }
 
 .modal-card {
@@ -940,8 +945,10 @@ input, select {
 .modal-body-scroll {
   padding: 18px 22px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   background-color: #FAF9F7;
+  max-height: calc(94vh - 120px);
 }
 
 /* Subcards */
@@ -962,12 +969,15 @@ input, select {
 
 .subcard-icon {
   font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .subcard-title {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--primary-burgundy-dark);
+  color: var(--primary-burgundy);
   letter-spacing: -0.01em;
 }
 
@@ -982,11 +992,13 @@ input, select {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
 }
 
 .modal-table thead th {
-  background-color: #FBFBFA;
-  border-bottom: 1px solid var(--border-color);
+  background-color: #F8F7F5;
+  border: 1px solid var(--border-color);
   padding: 8px 10px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -995,10 +1007,19 @@ input, select {
 
 .modal-table tbody td {
   padding: 7px 10px;
-  border-bottom: 1px solid #F3F4F6;
+  border: 1px solid #EFECE9;
   vertical-align: middle;
 }
 
+.modal-table tbody tr:nth-child(even) td {
+  background-color: #FAF9F7;
+}
+
+.modal-table tbody tr:hover td {
+  background-color: #F5F3F0;
+}
+
+.modal-table tbody tr.table-total-row td,
 .table-total-row td {
   background-color: #FEF9C3 !important;
   border-top: 1px solid #FDE047 !important;
@@ -1017,23 +1038,36 @@ input, select {
 
 .overview-top-section {
   display: grid;
-  grid-template-columns: 65% 35%;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px;
+  align-items: stretch;
 }
 
 .overview-left-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .overview-mid-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
 .overview-right-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .overview-top-section {
+    grid-template-columns: 1fr;
+  }
+  .overview-mid-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Yield & Quality Split Inside Card */
@@ -1098,18 +1132,19 @@ input, select {
 }
 
 .flow-step-circle {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .flow-icon-completed {
-  background-color: #16A34A;
+  background-color: #1B7A36;
   color: #FFFFFF;
 }
 
@@ -1119,7 +1154,7 @@ input, select {
 }
 
 .flow-icon-pending {
-  background-color: #F59E0B;
+  background-color: #D97706;
   color: #FFFFFF;
 }
 
@@ -1134,28 +1169,38 @@ input, select {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 12px;
+  white-space: nowrap;
 }
 
 .flow-badge-completed {
   background-color: var(--status-green-bg);
   color: var(--status-green-text);
+  border: 1px solid var(--status-green-border);
 }
 
 .flow-badge-na {
   background-color: var(--status-gray-bg);
   color: var(--status-gray-text);
+  border: 1px solid var(--status-gray-border);
 }
 
 .flow-badge-pending {
   background-color: var(--status-amber-bg);
   color: var(--status-amber-text);
+  border: 1px solid var(--status-amber-border);
 }
 
-/* Overview Bottom Row: 3 Columns */
+/* Overview Bottom Row: 2 Columns */
 .overview-bottom-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .overview-bottom-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card-kv-list {

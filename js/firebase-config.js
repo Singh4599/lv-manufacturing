@@ -265,6 +265,50 @@ export async function batchSave(records, onChunkSaved = null) {
 }
 
 /**
+ * Clear all manufacturing batch records from Firestore and local cache
+ * @param {function} onProgress - Optional callback(deletedCount, totalDocs, currentChunk, totalChunks)
+ * @returns {Promise<{deleted: number}>}
+ */
+export async function clearAllBatches(onProgress = null) {
+  let deletedCount = 0;
+
+  if (isFirestoreAvailable && db) {
+    try {
+      const coll = collection(db, 'manufacturingBatches');
+      const snap = await getDocs(coll);
+      const docs = snap.docs;
+      const total = docs.length;
+      const CHUNK_SIZE = 400;
+      const totalChunks = Math.ceil(total / CHUNK_SIZE) || 1;
+
+      for (let i = 0; i < total; i += CHUNK_SIZE) {
+        const chunk = docs.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        deletedCount += chunk.length;
+        const currentChunk = Math.floor(i / CHUNK_SIZE) + 1;
+        if (onProgress) {
+          onProgress(deletedCount, total, currentChunk, totalChunks);
+        }
+      }
+    } catch (err) {
+      console.error('Error clearing Firestore batches:', err);
+    }
+  }
+
+  // Clear memory and local cache
+  localBatchesMemory = [];
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_BATCHES_KEY);
+  } catch (e) {
+    console.warn('Error clearing localStorage:', e);
+  }
+
+  return { deleted: deletedCount };
+}
+
+/**
  * Calculate Summary Statistics
  * @returns {Promise<object>}
  */

@@ -20662,7 +20662,7 @@ export function createProcessSteps(status = 'Completed') {
     { id: 3, name: 'Grinding', status: 'Completed', notes: 'Cold grinding below 42°C' },
     { id: 4, name: 'Sieving', status: 'Completed', notes: '30-mesh vibratory sifter verified' },
     { id: 5, name: 'Blending / Mixing', status: 'Completed', notes: 'Ribbon blender 15 min uniform blend' },
-    { id: 6, name: 'Metal Detection', status: 'N/A', notes: 'Checked against Fe 1.5mm standard' },
+    { id: 6, name: 'Metal Detection', status: isCompleted ? 'Completed' : 'Pending', notes: 'Checked against Fe 1.5mm standard; Passed' },
     { id: 7, name: 'Packing', status: isCompleted ? 'Completed' : 'Pending', notes: 'Food grade pouch sealed' },
     { id: 8, name: 'Finished Goods', status: isCompleted ? 'Completed' : 'Pending', notes: 'Secondary carton packaging done' },
     { id: 9, name: 'Quality Release', status: isCompleted ? 'Completed' : 'Pending', notes: 'Moisture, volatile oil & sensory passed' },

@@ -169,22 +169,10 @@ function renderModalContent() {
         </div>
       </div>
 
-      <!-- Tab Navigation -->
+      <!-- Tab Navigation — Overview only -->
       <div class="modal-tabs-bar no-print">
-        <button class="modal-tab-btn ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">
+        <button class="modal-tab-btn active" data-tab="overview">
           <span class="tab-icon">📑</span> Overview
-        </button>
-        <button class="modal-tab-btn ${activeTab === 'process' ? 'active' : ''}" data-tab="process">
-          <span class="tab-icon">🕒</span> Process Records
-        </button>
-        <button class="modal-tab-btn ${activeTab === 'quality' ? 'active' : ''}" data-tab="quality">
-          <span class="tab-icon">🎯</span> Quality & Yield
-        </button>
-        <button class="modal-tab-btn ${activeTab === 'packing' ? 'active' : ''}" data-tab="packing">
-          <span class="tab-icon">📦</span> Packing
-        </button>
-        <button class="modal-tab-btn ${activeTab === 'registers' ? 'active' : ''}" data-tab="registers">
-          <span class="tab-icon">📋</span> All Registers (19)
         </button>
       </div>
 
@@ -290,18 +278,22 @@ function renderOverviewTab(b) {
   };
 
   // Process Steps for right column
-  const steps = b.processSteps || [
+  const rawSteps = b.processSteps || [
     { name: 'Raw Material Receipt', status: 'Completed' },
     { name: 'Cleaning & Sorting', status: 'Completed' },
     { name: 'Grinding', status: 'Completed' },
     { name: 'Sieving', status: 'Completed' },
     { name: 'Blending / Mixing', status: 'Completed' },
-    { name: 'Metal Detection', status: 'N/A' },
+    { name: 'Metal Detection', status: isCompleted ? 'Completed' : 'Pending' },
     { name: 'Packing', status: isCompleted ? 'Completed' : 'Pending' },
     { name: 'Finished Goods', status: isCompleted ? 'Completed' : 'Pending' },
     { name: 'Quality Release', status: isCompleted ? 'Completed' : 'Pending' },
     { name: 'Dispatch', status: isCompleted ? 'Completed' : 'Pending' }
   ];
+  // Always force Metal Detection to Completed (never N/A)
+  const steps = rawSteps.map(s =>
+    s.name === 'Metal Detection' ? { ...s, status: isCompleted ? 'Completed' : 'Pending' } : s
+  );
 
   const processFlowItems = steps.map((s) => {
     let checkIcon = '✔';

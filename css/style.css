@@ -1607,7 +1607,31 @@ input, select {
     gap: 8px !important;
   }
 
-  /* Page break control — avoid breaking inside cards */
+  /* Print list table — show main content, hide modal */
+  .modal-overlay:not(.hidden) ~ * { display: none !important; }
+
+  .main-content {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .table-card {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .master-table th,
+  .master-table td {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+  }
+
+  .btn-export-outline,
+  #btnPrintList,
+  #btnExportMasterExcel {
+    display: none !important;
+  }
   .overview-section-card {
     page-break-inside: avoid !important;
     break-inside: avoid !important;

@@ -16,11 +16,29 @@ import {
 } from './calculations.js';
 
 /**
- * Generate batch number: {ABBREV}{MMYY}-{SEQ}
- * e.g. Chana Masala → CM1126-01, Pav Bhaji Masala → PBM1126-01
- * Skips generic words: masala, powder, spice, mix, blend
+ * Get initials from a name — first letter of EVERY word, uppercase.
+ * Turmeric → T
+ * Chana Masala → CM
+ * Chilli Paneer Masala → CPM
+ * Jain Vada Masala → JVM
  */
-export function generateBatchNumber(code, dateInput, seq = 1) {
+export function getInitials(name) {
+  return (name || '')
+    .trim()
+    .split(/\s+/)
+    .map(w => (w[0] || '').toUpperCase())
+    .filter(Boolean)
+    .join('') || 'XX';
+}
+
+/**
+ * Generate product batch number: {INITIALS_FROM_NAME}{MMYY}-{SEQ}
+ * e.g. Chana Masala (Nov 2026) → CM1126-01
+ *      Jain Vada Masala (Nov 2026) → JVM1126-01
+ *      Turmeric (Oct 2026) → T1026-01
+ * Pass productName to derive initials; code is kept as fallback.
+ */
+export function generateBatchNumber(code, dateInput, seq = 1, productName = '') {
   let d;
   if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
     const [year, month] = dateInput.split('-').map(Number);
@@ -33,11 +51,10 @@ export function generateBatchNumber(code, dateInput, seq = 1) {
   const year = String(d.getFullYear()).slice(-2);
   const seqStr = String(seq).padStart(2, '0');
 
-  // Generate code from product name if not provided
-  let cleanCode = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (!cleanCode) cleanCode = 'XX';
+  // Prefer initials from full product name; fall back to code
+  const initials = productName ? getInitials(productName) : ((code || '').toUpperCase().replace(/[^A-Z]/g, '') || 'XX');
 
-  return `${cleanCode}${month}${year}-${seqStr}`;
+  return `${initials}${month}${year}-${seqStr}`;
 }
 
 export const generateBatchNo = generateBatchNumber;
@@ -20773,7 +20790,7 @@ export function buildBatchRecord({
   qualityPassed = true
 }) {
   const displayDate = formatDate(dateStr);
-  const batchNo = generateBatchNumber(product.code, dateStr, seq);
+  const batchNo = generateBatchNumber(product.code, dateStr, seq, product.name);
   const dispatchRefNo = generateDispatchRefNo(batchNo);
   const packagingLot = generatePackagingLot(dateStr);
 
@@ -20803,10 +20820,9 @@ export function buildBatchRecord({
   const ingredients = (product.recipe || []).map((item) => {
     const formulaPct = realisticPcts.get(item.srNo) ?? item.formulaPct;
     const reqQty = calcIngredientQty(plannedQty, formulaPct);
-    // Extract initials from the hardcoded rmBatchNo (e.g. "CO-260401" → "CO")
-    // and rebuild as CO-{MMYY}
-    const storedCode = (item.rmBatchNo || '').split('-')[0] || 'RM';
-    const dynamicRMBatch = `${storedCode}-${rmMM}${rmYY}`;
+    // RM Batch No: {ALL_INITIALS_FROM_NAME}{MMYY} — e.g. Turmeric→T1126, Coriander Seeds→CS1126
+    const rmInitials = getInitials(item.name);
+    const dynamicRMBatch = `${rmInitials}${rmMM}${rmYY}`;
     return {
       srNo: item.srNo,
       name: item.name,

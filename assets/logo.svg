@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 110" width="160" height="110">
+  <defs>
+    <linearGradient id="bowlGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="50%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </linearGradient>
+    <linearGradient id="pestleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="leafGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="leafGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Green Leaves sprouting -->
+  <path d="M 68 28 C 62 16, 48 18, 46 26 C 54 28, 62 31, 68 34 Z" fill="url(#leafGrad1)"/>
+  <path d="M 88 28 C 96 16, 110 18, 112 26 C 104 28, 96 31, 88 34 Z" fill="url(#leafGrad2)"/>
+  <path d="M 76 22 C 73 10, 85 8, 88 15 C 87 20, 83 22, 76 24 Z" fill="url(#leafGrad1)"/>
+
+  <!-- Pestle angled -->
+  <rect x="74" y="6" width="11" height="34" rx="5.5" transform="rotate(26 80 22)" fill="url(#pestleGrad)"/>
+
+  <!-- Mortar Bowl -->
+  <path d="M 50 34 L 108 34 C 111 34 113 36 112 39 C 108 58 96 66 79 66 C 62 66 50 58 46 39 C 45 36 47 34 50 34 Z" fill="url(#bowlGrad)"/>
+  <!-- Mortar Rim highlight -->
+  <ellipse cx="79" cy="35" rx="31" ry="5.5" fill="#FBBF24" opacity="0.85"/>
+  <ellipse cx="79" cy="35.5" rx="27" ry="4" fill="#92400E" opacity="0.6"/>
+  <!-- Mortar Base -->
+  <path d="M 66 65 L 92 65 C 95 65 97 68 96 71 C 94 73 89 74 79 74 C 69 74 64 73 62 71 C 61 68 63 65 66 65 Z" fill="#78350F"/>
+
+  <!-- Brand Text -->
+  <text x="79" y="97" font-family="'Times New Roman', Times, Georgia, serif" font-size="20" font-weight="900" fill="#AC033B" text-anchor="middle" letter-spacing="1.5">LV SPICES</text>
+</svg>

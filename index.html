@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manufacturing & Processing Records | LV Spices</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
+  <!-- SheetJS CDN for Excel Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Fixed Sidebar (Ref Image 1 Match) -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <img src="./assets/logo.svg" alt="LV SPICES" class="sidebar-logo-img" />
+        </div>
+        <nav class="sidebar-nav">
+          <a href="./index.html" class="nav-link active">
+            <span class="nav-icon">🏭</span>
+            <span>Manufacturing Records</span>
+          </a>
+          <a href="./settings.html" class="nav-link">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+          </a>
+          <a href="./backfill.html" class="nav-link">
+            <span class="nav-icon">🔄</span>
+            <span>Historical Backfill</span>
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <img src="./assets/spices-illustration.svg" alt="LV Spices" class="sidebar-spice-illustration" />
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <!-- Header Bar -->
+      <header class="dashboard-header">
+        <div class="header-left">
+          <h1 class="page-title">Manufacturing & Processing Records</h1>
+          <div class="cloud-synced-badge" id="cloudSyncStatus">
+            <span>☁️</span> Cloud Synced
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn-icon-header" title="Notifications" aria-label="Notifications">
+            🔔
+            <span class="bell-badge-dot"></span>
+          </button>
+          <div class="user-profile-btn" title="Dhruv Singh (Quality & Production Head)">
+            <div class="avatar-circle">DS</div>
+            <span class="chevron-down">▼</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 4 Summary Cards (Ref Image 1 Match) -->
+      <section class="summary-cards-grid" aria-label="Summary Overview">
+        <!-- Card 1: Total Batches -->
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-pink">
+            <span>📚</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-val" id="statTotalBatches">0</span>
+            <span class="stat-label">Total Batches</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Today's Production -->
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-green">
+            <span>🏭</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-val" id="statTodayProd">0</span>
+            <span class="stat-label">Today's Production</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Total Finished Qty -->
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-orange">
+            <span>📦</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-val" id="statFinishedQty">0 kg</span>
+            <span class="stat-label">Total Finished Qty</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Pending Records -->
+        <div class="stat-card">
+          <div class="stat-icon-wrap icon-purple">
+            <span>🕒</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-val" id="statPendingRecords">0</span>
+            <span class="stat-label">Pending Records</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Date & Filter Controls Row -->
+      <div class="table-controls-bar">
+        <div class="controls-left">
+          <button class="btn-today-pill" id="btnFilterToday">Today</button>
+
+          <!-- Date Range Dropdown -->
+          <div class="dropdown-container">
+            <button class="btn-dropdown-select" id="btnDateRangeDropdown" aria-expanded="false">
+              <span>📅</span>
+              <span id="dateRangeLabelText">Apr 01, 2026 – Today</span>
+              <span class="chevron-down">⌄</span>
+            </button>
+            <div class="dropdown-menu-popover hidden" id="dateRangeDropdownMenu">
+              <button class="date-preset-item" data-preset="financial_year">Financial Year (Apr 01, 2026 – Today)</button>
+              <button class="date-preset-item" data-preset="month">Current Month</button>
+              <button class="date-preset-item" data-preset="week">Last 7 Days</button>
+              <button class="date-preset-item" data-preset="today">Today Only</button>
+              <div class="custom-date-section">
+                <div class="custom-date-row">
+                  <div class="custom-date-field">
+                    <label for="customDateFrom">From</label>
+                    <input type="date" id="customDateFrom" value="2026-04-01" />
+                  </div>
+                  <div class="custom-date-field">
+                    <label for="customDateTo">To</label>
+                    <input type="date" id="customDateTo" />
+                  </div>
+                </div>
+                <button class="btn-apply-dates" id="btnApplyCustomDates">Apply Range</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls-right">
+          <div class="search-box-wrap">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="searchBatchInput"
+              class="search-input"
+              placeholder="Search by Batch No. / Product..."
+              aria-label="Search records"
+            />
+          </div>
+          <button class="btn-export-outline" id="btnExportMasterExcel" title="Export to Excel">
+            <span>⬇</span> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Master Table Card -->
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="master-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;" class="text-center">Sr. No.</th>
+                <th>Production Date</th>
+                <th>Batch No.</th>
+                <th>Product Name</th>
+                <th class="text-right">Planned Qty</th>
+                <th class="text-right">Actual Qty</th>
+                <th class="text-right">Yield %</th>
+                <th class="text-center">Status</th>
+                <th class="text-center" style="width: 90px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="masterTableBody">
+              <!-- Dynamically populated by app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <span class="pagination-info" id="paginationInfoText">Showing 1–10 of 0 batches</span>
+          <div class="pagination-buttons" id="paginationControls">
+            <!-- Dynamically populated by app.js -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Batch Details Modal Overlay (Ref Image 2 Match) -->
+  <div id="batchModalContainer" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <!-- Populated dynamically by modal.js -->
+  </div>
+
+  <!-- Main ES Module Script -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

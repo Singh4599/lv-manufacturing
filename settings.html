@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings & Product Master | LV Spices</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <img src="./assets/logo.svg" alt="LV SPICES" class="sidebar-logo-img" />
+        </div>
+        <nav class="sidebar-nav">
+          <a href="./index.html" class="nav-link">
+            <span class="nav-icon">🏭</span>
+            <span>Manufacturing Records</span>
+          </a>
+          <a href="./settings.html" class="nav-link active">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+          </a>
+          <a href="./backfill.html" class="nav-link">
+            <span class="nav-icon">🔄</span>
+            <span>Historical Backfill</span>
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <img src="./assets/spices-illustration.svg" alt="LV Spices" class="sidebar-spice-illustration" />
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <header class="dashboard-header">
+        <div class="header-left">
+          <h1 class="page-title">System Settings & Formulation Masters</h1>
+          <div class="cloud-synced-badge">
+            <span>⚙️</span> Configuration
+          </div>
+        </div>
+        <div class="header-right">
+          <a href="./index.html" class="btn-export-outline">
+            <span>←</span> Back to Dashboard
+          </a>
+        </div>
+      </header>
+
+      <!-- Section 1: General Batch Parameters -->
+      <section class="settings-section-card">
+        <h2 class="settings-section-title">General Production Parameters</h2>
+        <p class="settings-section-desc">Configure default batch sizes, automatic generation behavior, and numbering conventions.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+          <div class="form-group">
+            <label class="form-label" for="settingDefaultQty">Default Planned Batch Quantity (kg)</label>
+            <input type="number" id="settingDefaultQty" class="form-control" value="1.000" step="0.1" min="0.1" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingAutoGenerate">Daily Auto-Generation Engine</label>
+            <select id="settingAutoGenerate" class="form-control">
+              <option value="enabled" selected>Enabled (Auto-creates today's scheduled batches)</option>
+              <option value="disabled">Disabled (Manual batch creation only)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingBatchPrefix">Batch Sequence Mask</label>
+            <input type="text" id="settingBatchPrefix" class="form-control" value="{CODE}-{DDMMYY}-{SEQ}" readonly style="background: #F9FAFB;" />
+          </div>
+        </div>
+
+        <button class="btn-primary-burgundy mt-2" id="btnSaveGeneralSettings">
+          Save Settings
+        </button>
+      </section>
+
+      <!-- Section 2: Product Master & Recipes -->
+      <section class="settings-section-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <h2 class="settings-section-title">Product Master & Recipe Formulations</h2>
+            <p class="settings-section-desc" style="margin-bottom: 0;">10 active standard products and their approved formulation percentages.</p>
+          </div>
+          <button class="btn-export-outline" id="btnOpenAddProductModal">
+            <span>+</span> Add Product
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="master-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Code</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th class="text-right">Default Qty</th>
+                <th>Standard Pack</th>
+                <th class="text-center">Recipe Ingredients</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productMasterTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 3: Weekly Production Schedule -->
+      <section class="settings-section-card">
+        <h2 class="settings-section-title">Weekly Production Schedule</h2>
+        <p class="settings-section-desc">Assigned products for routine daily processing (Monday to Saturday). Sundays are reserved for maintenance.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;" id="scheduleGrid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Section 4: Data Maintenance & Backfill Shortcut -->
+      <section class="settings-section-card">
+        <h2 class="settings-section-title">Database Maintenance & Historical Sync</h2>
+        <p class="settings-section-desc">Manage historical batch records across the financial year.</p>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <a href="./backfill.html" class="btn-primary-burgundy">
+            <span>🔄</span> Open Historical Backfill Tool
+          </a>
+          <button class="btn-export-outline" id="btnClearCache">
+            Clear Local Memory Cache
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Recipe Inspection / Edit Modal -->
+  <div id="recipeModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" style="max-width: 750px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="recipeModalTitle">Recipe Formulation</h3>
+        <button class="btn-close-modal" id="btnCloseRecipeModal">×</button>
+      </div>
+      <div class="modal-body-scroll" id="recipeModalBody">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Logic -->
+  <script type="module">
+    import { PRODUCT_MASTER, DEFAULT_WEEKLY_SCHEDULE } from './js/auto-generate.js';
+    import { saveAppSettings, fetchAppSettings } from './js/firebase-config.js';
+
+    const tbody = document.getElementById('productMasterTableBody');
+    const scheduleGrid = document.getElementById('scheduleGrid');
+
+    // Render Product Master Table
+    function renderProducts() {
+      tbody.innerHTML = PRODUCT_MASTER.map((p) => `
+        <tr>
+          <td class="font-mono font-bold text-burgundy">${p.code}</td>
+          <td><strong>${p.name}</strong></td>
+          <td><span class="reg-tag">${p.category}</span></td>
+          <td class="text-right font-mono">${p.defaultQty.toFixed(2)} kg</td>
+          <td>${p.packSize || '100 g'}</td>
+          <td class="text-center font-mono">${p.recipe.length} ingredients (100%)</td>
+          <td class="text-right">
+            <button class="btn-view-row" data-recipe="${p.code}">
+              👁 View Recipe
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('button[data-recipe]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const code = btn.getAttribute('data-recipe');
+          const product = PRODUCT_MASTER.find((x) => x.code === code);
+          if (product) openRecipeModal(product);
+        });
+      });
+    }
+
+    // Render Weekly Schedule
+    const daysMap = [
+      { id: 1, name: 'Monday' },
+      { id: 2, name: 'Tuesday' },
+      { id: 3, name: 'Wednesday' },
+      { id: 4, name: 'Thursday' },
+      { id: 5, name: 'Friday' },
+      { id: 6, name: 'Saturday' },
+      { id: 0, name: 'Sunday (Maintenance - No Production)' }
+    ];
+
+    function renderSchedule() {
+      scheduleGrid.innerHTML = daysMap.map((day) => {
+        const codes = DEFAULT_WEEKLY_SCHEDULE[day.id] || [];
+        const productNames = codes.map((c) => {
+          const p = PRODUCT_MASTER.find((x) => x.code === c);
+          return p ? p.name : c;
+        }).join(', ');
+
+        return `
+          <div class="modal-subcard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="color: var(--primary-burgundy-dark); font-size: 13.5px;">${day.name}</strong>
+              <span class="reg-tag font-mono">${codes.length} Products</span>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-secondary);">
+              ${codes.length > 0 ? productNames : '<em>No production scheduled. Deep cleaning & sanitation.</em>'}
+            </p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Open Recipe Modal
+    function openRecipeModal(product) {
+      const modal = document.getElementById('recipeModal');
+      const title = document.getElementById('recipeModalTitle');
+      const body = document.getElementById('recipeModalBody');
+
+      title.textContent = `${product.name} (${product.code}) - Formulation`;
+
+      const rows = product.recipe.map((r) => `
+        <tr>
+          <td class="text-center">${r.srNo}</td>
+          <td><strong>${r.name}</strong></td>
+          <td class="font-mono text-muted">${r.rmBatchNo}</td>
+          <td class="text-right font-mono font-bold">${r.formulaPct.toFixed(2)}%</td>
+          <td class="text-right font-mono">${(r.formulaPct / 100 * product.defaultQty).toFixed(3)} kg</td>
+        </tr>
+      `).join('');
+
+      body.innerHTML = `
+        <div class="table-responsive">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">Sr. No.</th>
+                <th>Raw Material Ingredient</th>
+                <th>Standard RM Batch</th>
+                <th class="text-right">Formula %</th>
+                <th class="text-right">Required (1.00 kg Batch)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr class="table-total-row">
+                <td colspan="3" class="text-center font-bold">Total</td>
+                <td class="text-right font-bold font-mono">100.00%</td>
+                <td class="text-right font-bold font-mono">${product.defaultQty.toFixed(3)} kg</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    document.getElementById('btnCloseRecipeModal')?.addEventListener('click', () => {
+      document.getElementById('recipeModal')?.classList.add('hidden');
+    });
+
+    document.getElementById('btnClearCache')?.addEventListener('click', () => {
+      localStorage.removeItem('lv_spices_batches_v2');
+      alert('Local memory cache cleared. Refreshing page...');
+      window.location.reload();
+    });
+
+    document.getElementById('btnSaveGeneralSettings')?.addEventListener('click', async () => {
+      const qty = parseFloat(document.getElementById('settingDefaultQty').value) || 1.0;
+      const autoGen = document.getElementById('settingAutoGenerate').value === 'enabled';
+
+      await saveAppSettings({
+        defaultBatchQty: qty,
+        autoGenerationEnabled: autoGen,
+        updatedAt: new Date().toISOString()
+      });
+
+      alert('Settings saved successfully!');
+    });
+
+    // Initial render
+    renderProducts();
+    renderSchedule();
+  </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Historical Backfill Engine | LV Spices</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <img src="./assets/logo.svg" alt="LV SPICES" class="sidebar-logo-img" />
+        </div>
+        <nav class="sidebar-nav">
+          <a href="./index.html" class="nav-link">
+            <span class="nav-icon">🏭</span>
+            <span>Manufacturing Records</span>
+          </a>
+          <a href="./settings.html" class="nav-link">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+          </a>
+          <a href="./backfill.html" class="nav-link active">
+            <span class="nav-icon">🔄</span>
+            <span>Historical Backfill</span>
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <img src="./assets/spices-illustration.svg" alt="LV Spices" class="sidebar-spice-illustration" />
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+      <header class="dashboard-header">
+        <div class="header-left">
+          <h1 class="page-title">Historical Backfill & Data Sync Engine</h1>
+          <div class="cloud-synced-badge">
+            <span>🔄</span> Production Sync
+          </div>
+        </div>
+        <div class="header-right">
+          <a href="./index.html" class="btn-export-outline">
+            <span>←</span> Back to Dashboard
+          </a>
+        </div>
+      </header>
+
+      <!-- Description Card -->
+      <div class="settings-section-card">
+        <h2 class="settings-section-title">Automated Batch History Generator</h2>
+        <p class="settings-section-desc">
+          Generate compliant batch manufacturing records from the start of the current financial year (April 1, 2026) up to today. Batches are automatically calculated according to the LV Spices weekly formulation schedule (Monday through Saturday, excluding Sundays). Writes are committed in atomic batches of 400 documents to Google Cloud Firestore.
+        </p>
+
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="backfillStartDate" class="form-control" value="2026-04-01" style="max-width: 220px;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">End Date</label>
+            <input type="date" id="backfillEndDate" class="form-control" style="max-width: 220px;" />
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Existing Records Mode</label>
+            <select id="backfillMode" class="form-control" style="max-width: 220px;">
+              <option value="skip">Skip if already in Firestore</option>
+              <option value="overwrite">Overwrite / Update with latest recipe</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="btn-primary-burgundy" id="btnStartBackfill">
+            🚀 Run Historical Generation
+          </button>
+          <button class="btn-export-outline hidden" id="btnStopBackfill">
+            ⏹ Stop
+          </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="backfillProgressWrap" class="hidden mt-4">
+          <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;">
+            <span id="progressStatusText">Preparing generation...</span>
+            <span id="progressPctText">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+        </div>
+
+        <!-- Live Console Log -->
+        <div class="mt-4">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="form-label" style="margin-bottom: 0;">Execution Console Output</span>
+            <button id="btnClearConsole" class="text-muted" style="font-size: 11px;">Clear Log</button>
+          </div>
+          <div class="backfill-console" id="consoleOutput">
+            [SYSTEM READY] Ready to backfill manufacturing batches from 2026-04-01 to present date. Click 'Run Historical Generation' to start.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Backfill Engine Logic -->
+  <script type="module">
+    import { batchSave, fetchBatches } from './js/firebase-config.js';
+    import { generateDayBatches } from './js/auto-generate.js';
+    import { formatDateISO } from './js/calculations.js';
+
+    // Set default end date to today
+    const todayISO = formatDateISO(new Date());
+    document.getElementById('backfillEndDate').value = todayISO;
+
+    const consoleEl = document.getElementById('consoleOutput');
+    const progressWrap = document.getElementById('backfillProgressWrap');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const progressStatusText = document.getElementById('progressStatusText');
+    const progressPctText = document.getElementById('progressPctText');
+    const btnStart = document.getElementById('btnStartBackfill');
+    const btnClear = document.getElementById('btnClearConsole');
+
+    let isRunning = false;
+
+    function log(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const prefix = type === 'success' ? '✔' : (type === 'warn' ? '⚠' : 'ℹ');
+      consoleEl.innerHTML += `\n[${time}] ${prefix} ${msg}`;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    btnClear.addEventListener('click', () => {
+      consoleEl.innerHTML = '[SYSTEM] Console cleared.';
+    });
+
+    btnStart.addEventListener('click', async () => {
+      if (isRunning) return;
+
+      const startDate = document.getElementById('backfillStartDate').value;
+      const endDate = document.getElementById('backfillEndDate').value;
+      const mode = document.getElementById('backfillMode').value;
+
+      if (!startDate || !endDate || startDate > endDate) {
+        alert('Please enter a valid start and end date.');
+        return;
+      }
+
+      isRunning = true;
+      btnStart.disabled = true;
+      btnStart.style.opacity = '0.5';
+      progressWrap.classList.remove('hidden');
+
+      log(`Initiating backfill scan from ${startDate} to ${endDate}...`);
+
+      try {
+        // Step 1: Pre-fetch existing batches if mode is 'skip'
+        let existingBatchIds = new Set();
+        if (mode === 'skip') {
+          log('Querying existing batch records in Firestore to avoid duplicates...');
+          const existing = await fetchBatches(startDate, endDate);
+          existing.forEach((b) => existingBatchIds.add(b.id || b.batchNo));
+          log(`Found ${existing.length} existing batches in this timeframe.`);
+        }
+
+        // Step 2: Generate all batches
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const cur = new Date(start);
+
+        const batchesToSave = [];
+        let totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        let dayCounter = 0;
+        let skippedSundays = 0;
+        let skippedExisting = 0;
+
+        while (cur <= end) {
+          const dateStr = formatDateISO(cur);
+          dayCounter++;
+
+          if (cur.getDay() === 0) {
+            skippedSundays++;
+          } else {
+            const dayBatches = generateDayBatches(dateStr);
+            dayBatches.forEach((batch) => {
+              if (mode === 'skip' && existingBatchIds.has(batch.id)) {
+                skippedExisting++;
+              } else {
+                batchesToSave.push(batch);
+              }
+            });
+          }
+
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        log(`Scan complete: ${dayCounter} calendar days (${skippedSundays} Sundays skipped).`);
+        log(`Batches to write: ${batchesToSave.length} (${skippedExisting} skipped as already present).`);
+
+        if (batchesToSave.length === 0) {
+          log('No new batches need to be generated.', 'warn');
+          progressStatusText.textContent = 'All batches already present in Firestore.';
+          progressBarFill.style.width = '100%';
+          progressPctText.textContent = '100%';
+          return;
+        }
+
+        // Step 3: Write in chunks of 400
+        log(`Committing batches to Firestore in chunks of 400...`);
+        let savedSoFar = 0;
+
+        const result = await batchSave(batchesToSave, (current, total) => {
+          savedSoFar = current;
+          const pct = Math.round((current / total) * 100);
+          progressBarFill.style.width = `${pct}%`;
+          progressPctText.textContent = `${pct}%`;
+          progressStatusText.textContent = `Written ${current} of ${total} batch documents...`;
+          log(`Committed chunk: ${current}/${total} documents.`);
+        });
+
+        log(`Successfully committed ${result.saved} batch records to Firestore!`, 'success');
+        progressStatusText.textContent = `Backfill complete: ${result.saved} batches written.`;
+        alert(`Backfill Complete! Generated and saved ${result.saved} manufacturing records.`);
+
+      } catch (err) {
+        log(`Error occurred during backfill: ${err.message}`, 'warn');
+        console.error(err);
+      } finally {
+        isRunning = false;
+        btnStart.disabled = false;
+        btnStart.style.opacity = '1';
+      }
+    });
+  </script>
+</body>
+</html>

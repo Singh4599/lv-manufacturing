@@ -177,9 +177,11 @@ function setupEventListeners() {
     const toInput = document.getElementById('customDateTo');
 
     if (fromInput?.value && toInput?.value) {
+      const todayISO = formatDateISO(new Date());
       state.dateMode = 'custom_range';
       state.dateFrom = fromInput.value;
-      state.dateTo = toInput.value;
+      // Cap dateTo to today — never show future records
+      state.dateTo = toInput.value > todayISO ? todayISO : toInput.value;
       state.currentPage = 1;
 
       dateRangeModal?.classList.add('hidden');

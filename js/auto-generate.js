@@ -20671,6 +20671,95 @@ export function createProcessSteps(status = 'Completed') {
 }
 
 /**
+ * Realistic spice formula weight engine.
+ * Returns a base weight for each ingredient based on its role in spice blending.
+ * Weights are normalized to 100% across all ingredients in a recipe.
+ */
+function getIngredientBaseWeight(ingredientName) {
+  const n = ingredientName.toLowerCase();
+
+  // ── DOMINANT base spices (25-40%) ──────────────────────────────
+  if (/coriander|dhania|dhaniya/.test(n)) return 35;
+  if (/chilli|chili|lal mirch|red chili|red chilli|kashmiri/.test(n)) return 25;
+  if (/cumin|jeera/.test(n)) return 20;
+  if (/tomato|tamatar/.test(n)) return 28;
+
+  // ── MID-RANGE flavor spices (8-18%) ────────────────────────────
+  if (/turmeric|haldi/.test(n)) return 12;
+  if (/garam masala blend/.test(n)) return 10;
+  if (/black pepper|kali mirch/.test(n)) return 9;
+  if (/dry ginger|saunth|sonth/.test(n)) return 8;
+  if (/ginger/.test(n)) return 8;
+  if (/cardamom|elaichi/.test(n)) return 7;
+  if (/mango powder|amchur|dry mango|anardana|pomegranate/.test(n)) return 8;
+  if (/fennel|saunf|anise/.test(n)) return 9;
+  if (/fenugreek|methi/.test(n)) return 6;
+  if (/mustard|sarson|rai/.test(n)) return 7;
+  if (/sesame|til/.test(n)) return 6;
+  if (/ajwain|carom/.test(n)) return 5;
+
+  // ── SALT / ENHANCERS (5-10%) ────────────────────────────────────
+  if (/salt|namak|himalayan|black salt|sanchal|kala namak/.test(n)) return 8;
+  if (/sugar|cheeni|shakkar/.test(n)) return 5;
+  if (/citric acid/.test(n)) return 3;
+
+  // ── SMALL AROMATICS (2-6%) ──────────────────────────────────────
+  if (/cinnamon|dalchini/.test(n)) return 4;
+  if (/cloves|laung/.test(n)) return 3;
+  if (/star anise|chakra phool/.test(n)) return 3;
+  if (/bay leaf|tejpatta/.test(n)) return 2;
+  if (/nutmeg|jaiphal/.test(n)) return 3;
+  if (/mace|javitri/.test(n)) return 2;
+  if (/asafoetida|hing/.test(n)) return 2;
+  if (/curry leaves/.test(n)) return 3;
+  if (/black cardamom|badi elaichi/.test(n)) return 3;
+  if (/saffron|kesar/.test(n)) return 2;
+  if (/rose petal|gulab/.test(n)) return 2;
+
+  // ── SPECIALTY (4-10%) ───────────────────────────────────────────
+  if (/peanut|groundnut|moongphali/.test(n)) return 10;
+  if (/coconut|nariyal/.test(n)) return 8;
+  if (/cashew|kaju/.test(n)) return 6;
+  if (/sesame seed/.test(n)) return 5;
+  if (/flaxseed|alsi/.test(n)) return 4;
+  if (/poppy seed|khus khus/.test(n)) return 4;
+
+  // ── DEFAULT fallback ─────────────────────────────────────────────
+  return 5;
+}
+
+/**
+ * Given a recipe array, compute realistic formula percentages.
+ * Returns a Map<srNo, pct> with values summing to 100%.
+ * Adds slight seeded variation per product + date to look natural.
+ */
+function computeRealisticFormula(recipe, dateSeed = 0) {
+  if (!recipe || recipe.length === 0) return new Map();
+
+  // Base weights from ingredient knowledge
+  const weights = recipe.map(item => getIngredientBaseWeight(item.name));
+
+  // Add tiny seeded variation (±15% of base) so same product varies slightly by date
+  const varied = weights.map((w, i) => {
+    const variation = 1 + ((dateSeed * (i + 7) * 2654435761) % 100 - 50) / 500; // ±10%
+    return Math.max(1, w * variation);
+  });
+
+  // Normalize to 100%
+  const total = varied.reduce((s, v) => s + v, 0);
+  const pcts = varied.map(v => v / total * 100);
+
+  // Round to 2 decimal places, fix rounding error on last item
+  const rounded = pcts.map(p => Math.round(p * 100) / 100);
+  const roundSum = rounded.reduce((s, p) => s + p, 0);
+  rounded[rounded.length - 1] = Math.round((rounded[rounded.length - 1] + (100 - roundSum)) * 100) / 100;
+
+  const result = new Map();
+  recipe.forEach((item, i) => result.set(item.srNo, rounded[i]));
+  return result;
+}
+
+/**
  * Create a single batch record object
  */
 export function buildBatchRecord({
@@ -20702,19 +20791,33 @@ export function buildBatchRecord({
     : 0;
 
   // Calculate ingredients
+  // RM Batch No format: {INITIALS}-{MMYY} based on production date
+  const [bYear, bMonth] = dateStr.split('-').map(Number);
+  const rmMM = String(bMonth).padStart(2, '0');
+  const rmYY = String(bYear).slice(-2);
+
+  // Compute realistic formula percentages (overrides equal-split hardcoded values)
+  const dateSeedVal = bYear * 10000 + bMonth * 100 + (parseInt(dateStr.split('-')[2]) || 1);
+  const realisticPcts = computeRealisticFormula(product.recipe || [], dateSeedVal + product.code.charCodeAt(0));
+
   const ingredients = (product.recipe || []).map((item) => {
-    const reqQty = calcIngredientQty(plannedQty, item.formulaPct);
+    const formulaPct = realisticPcts.get(item.srNo) ?? item.formulaPct;
+    const reqQty = calcIngredientQty(plannedQty, formulaPct);
+    // Extract initials from the hardcoded rmBatchNo (e.g. "CO-260401" → "CO")
+    // and rebuild as CO-{MMYY}
+    const storedCode = (item.rmBatchNo || '').split('-')[0] || 'RM';
+    const dynamicRMBatch = `${storedCode}-${rmMM}${rmYY}`;
     return {
       srNo: item.srNo,
       name: item.name,
-      rmBatchNo: item.rmBatchNo,
-      formulaPct: item.formulaPct,
+      rmBatchNo: dynamicRMBatch,
+      formulaPct: formulaPct,
       requiredQty: reqQty,
       actualUsed: isCompleted ? reqQty : (status === 'Pending' ? reqQty : null)
     };
   });
 
-  const totalFormulaPct = (product.recipe || []).reduce((sum, r) => sum + r.formulaPct, 0);
+  const totalFormulaPct = ingredients.reduce((sum, r) => sum + r.formulaPct, 0);
   const totalRequiredQty = ingredients.reduce((sum, r) => sum + r.requiredQty, 0);
   const totalActualUsed = isCompleted
     ? ingredients.reduce((sum, r) => sum + (r.actualUsed || 0), 0)

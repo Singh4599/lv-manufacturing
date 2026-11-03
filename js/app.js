@@ -7,11 +7,14 @@ import {
   fetchBatches,
   getStats,
   subscribeToStats,
-  batchSave
+  batchSave,
+  clearAllBatches
 } from './firebase-config.js';
 
 import {
-  checkAndGenerateToday
+  checkAndGenerateToday,
+  generateDayBatches,
+  generateDateRangeBatches
 } from './auto-generate.js';
 
 import {
@@ -520,4 +523,47 @@ function handleExportMasterExcel() {
 
   const filename = `LV_Spices_Manufacturing_Records_${state.dateFrom}_to_${state.dateTo}.xlsx`;
   window.XLSX.writeFile(wb, filename);
+}
+
+// ── Reset & Regenerate (Clear Firestore + Regenerate Apr 2026 → Today) ──────
+const btnReset = document.getElementById('btnResetRegenerate');
+if (btnReset) {
+  // Show button with triple-click (hidden from casual users)
+  let headerClickCount = 0;
+  document.querySelector('.dashboard-header h1, .dashboard-header, h1')?.addEventListener('click', () => {
+    headerClickCount++;
+    if (headerClickCount >= 3) {
+      btnReset.style.display = '';
+      headerClickCount = 0;
+    }
+  });
+
+  btnReset.addEventListener('click', async () => {
+    if (!confirm('Clear ALL Firestore data and regenerate Apr 2026 → Today?\n\nThis cannot be undone.')) return;
+    btnReset.disabled = true;
+    btnReset.textContent = '⏳ Clearing...';
+
+    try {
+      await clearAllBatches();
+      btnReset.textContent = '⏳ Generating...';
+
+      const startDate = '2026-04-01';
+      const endDate = new Date().toISOString().slice(0, 10);
+      const batches = generateDateRangeBatches(startDate, endDate);
+
+      // Save in chunks of 200
+      const chunkSize = 200;
+      for (let i = 0; i < batches.length; i += chunkSize) {
+        await batchSave(batches.slice(i, i + chunkSize));
+        btnReset.textContent = `⏳ Saving ${Math.min(i + chunkSize, batches.length)}/${batches.length}...`;
+      }
+
+      btnReset.textContent = '✅ Done! Reloading...';
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      alert('Error: ' + err.message);
+      btnReset.disabled = false;
+      btnReset.textContent = '♻ Reset & Regenerate';
+    }
+  });
 }

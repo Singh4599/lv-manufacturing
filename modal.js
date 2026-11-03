@@ -169,13 +169,6 @@ function renderModalContent() {
         </div>
       </div>
 
-      <!-- Tab Navigation — Overview only -->
-      <div class="modal-tabs-bar no-print">
-        <button class="modal-tab-btn active" data-tab="overview">
-          <span class="tab-icon">📑</span> Overview
-        </button>
-      </div>
-
       <!-- Tab Panes Container (scrollable body) -->
       <div class="modal-body-scroll">
         ${renderTabContent(activeTab, b)}

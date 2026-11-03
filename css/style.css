@@ -1450,12 +1450,24 @@ input, select {
 /* --------------------------------------------------------------------------
    Print Styles (@media print)
    -------------------------------------------------------------------------- */
+@page {
+  size: A4 portrait;
+  margin: 10mm 12mm 10mm 12mm;
+}
+
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body {
     background: #FFFFFF !important;
     color: #000000 !important;
+    font-size: 10px !important;
   }
 
+  /* Hide everything except the modal */
   .sidebar,
   .no-print,
   .modal-tabs-bar,
@@ -1463,7 +1475,9 @@ input, select {
   .dashboard-header,
   .summary-cards-grid,
   .table-controls-bar,
-  .pagination-bar {
+  .pagination-bar,
+  .main-content,
+  .table-wrapper {
     display: none !important;
   }
 
@@ -1472,22 +1486,74 @@ input, select {
     padding: 0 !important;
   }
 
+  /* Make modal fill the full A4 page */
   .modal-overlay {
     position: static !important;
     background: none !important;
     padding: 0 !important;
+    display: block !important;
   }
 
   .modal-card {
     border: none !important;
     box-shadow: none !important;
     max-width: 100% !important;
-    max-height: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Compact modal header */
+  .modal-header {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+
+  .modal-header .modal-title {
+    font-size: 13px !important;
+  }
+
+  .batch-meta-row {
+    padding: 6px 12px !important;
+    gap: 8px !important;
+  }
+
+  .batch-meta-item .meta-label {
+    font-size: 8px !important;
+  }
+
+  .batch-meta-item .meta-value {
+    font-size: 11px !important;
   }
 
   .modal-body-scroll {
     overflow: visible !important;
-    padding: 0 !important;
+    padding: 8px 12px !important;
+    max-height: none !important;
+  }
+
+  /* Compact section cards */
+  .overview-grid {
+    gap: 8px !important;
+  }
+
+  .overview-section-card {
+    padding: 8px !important;
+    border-radius: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .section-heading {
+    font-size: 10px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Compact ingredient table */
+  .modal-table th,
+  .modal-table td {
+    padding: 3px 5px !important;
+    font-size: 9px !important;
   }
 
   .modal-table thead th {
@@ -1497,5 +1563,62 @@ input, select {
 
   .table-total-row td {
     background: #F3F4F6 !important;
+    padding: 4px 5px !important;
+    font-size: 9px !important;
+  }
+
+  /* Compact process flow */
+  .process-flow-list {
+    gap: 4px !important;
+  }
+
+  .flow-item {
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .flow-badge-completed,
+  .flow-badge-pending,
+  .flow-badge-na {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  /* Compact yield/packing/verification sections */
+  .kv-line {
+    font-size: 9px !important;
+    padding: 2px 0 !important;
+  }
+
+  .yield-quality-split {
+    gap: 8px !important;
+  }
+
+  /* Verification sign box */
+  .verification-box {
+    padding: 6px !important;
+    font-size: 9px !important;
+  }
+
+  /* Two-column layout stays side-by-side */
+  .overview-main-split {
+    display: grid !important;
+    grid-template-columns: 55% 43% !important;
+    gap: 8px !important;
+  }
+
+  /* Page break control — avoid breaking inside cards */
+  .overview-section-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .modal-table {
+    page-break-inside: auto !important;
+  }
+
+  .modal-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

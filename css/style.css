@@ -1072,10 +1072,14 @@ input, select {
 
 /* Yield & Quality Split Inside Card */
 .yield-quality-split {
-  display: grid;
-  grid-template-columns: 55% 45%;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   font-size: 12px;
+}
+.yq-col-metrics,
+.yq-col-badges {
+  width: 100%;
 }
 
 .yq-row {

@@ -32,11 +32,11 @@ export function getInitials(name) {
 }
 
 /**
- * Generate product batch number: {INITIALS_FROM_NAME}{MMYY}-{SEQ}
- * e.g. Chana Masala (Nov 2026) → CM1126-01
- *      Jain Vada Masala (Nov 2026) → JVM1126-01
- *      Turmeric (Oct 2026) → T1026-01
- * Pass productName to derive initials; code is kept as fallback.
+ * Generate product batch number: {INITIALS_FROM_NAME}{MMYY}
+ * e.g. Chana Masala (Nov 2026) → CM1126
+ *      Jain Vada Masala (Nov 2026) → JVM1126
+ *      Turmeric (Oct 2026) → T1026
+ * No sequential suffix — each batch identified by product initials + month-year.
  */
 export function generateBatchNumber(code, dateInput, seq = 1, productName = '') {
   let d;
@@ -49,12 +49,11 @@ export function generateBatchNumber(code, dateInput, seq = 1, productName = '') 
 
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = String(d.getFullYear()).slice(-2);
-  const seqStr = String(seq).padStart(2, '0');
 
   // Prefer initials from full product name; fall back to code
   const initials = productName ? getInitials(productName) : ((code || '').toUpperCase().replace(/[^A-Z]/g, '') || 'XX');
 
-  return `${initials}${month}${year}-${seqStr}`;
+  return `${initials}${month}${year}`;
 }
 
 export const generateBatchNo = generateBatchNumber;

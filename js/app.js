@@ -318,6 +318,8 @@ function renderMasterTable() {
     const plannedDisplay = formatQty(b.plannedQty, { decimals: 2 });
     const actualDisplay = b.actualQty != null ? formatQty(b.actualQty, { decimals: 2 }) : '–';
     const yieldDisplay = b.yieldPct != null ? formatPct(b.yieldPct) : '–';
+    const cleaningDisplay = b.cleaningStatus || (isCompleted ? 'Cleaned' : 'Pending');
+    const cleaningClass = cleaningDisplay === 'Cleaned' ? 'badge-completed' : 'badge-pending';
 
     return `
       <tr class="table-row-hover" data-batch-id="${b.id || b.batchNo}">
@@ -328,6 +330,9 @@ function renderMasterTable() {
         <td class="text-right font-mono">${plannedDisplay}</td>
         <td class="text-right font-mono">${actualDisplay}</td>
         <td class="text-right font-mono">${yieldDisplay}</td>
+        <td class="text-center">
+          <span class="status-pill ${cleaningClass}">${cleaningDisplay}</span>
+        </td>
         <td class="text-center">
           <span class="status-pill ${badgeClass}">${b.status || 'Pending'}</span>
         </td>

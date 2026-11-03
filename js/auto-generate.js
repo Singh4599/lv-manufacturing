@@ -20591,10 +20591,14 @@ export const DEFAULT_WEEKLY_SCHEDULE = {
 };
 
 // ── REALISTIC PRODUCTION SCHEDULING ──────────────────────────────────────────
-// Core products: manufactured 2-3x per week (staples)
-const CORE_PRODUCT_INDICES = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
-// Regular products: once per week rotation
-const REGULAR_PRODUCT_INDICES = Array.from({length: 80}, (_, i) => 20 + i);
+// Seasoning products = daily manufacturing (Blended Spices, Jain Blended Spices, Chilli Powder, Single Spices)
+const SEASONING_PRODUCTS = PRODUCTS.filter(p =>
+  ['Blended Spices', 'Jain Blended Spices', 'Chilli Powder', 'Single Spices Powder'].includes(p.category)
+);
+// Blended/variety products = manufactured 2-3 times per week
+const BLENDED_VARIETY_PRODUCTS = PRODUCTS.filter(p =>
+  ['Chutney Powders', 'Salt', 'Whole Spices'].includes(p.category)
+);
 
 // Seeded deterministic RNG (Mulberry32)
 function seeded(seed) {
@@ -20625,46 +20629,48 @@ export function getProductsForDate(dateStr) {
   const dayIdx = Math.floor((d - base) / 86400000);
   const rng = seeded(dayIdx * 7919 + 31337);
 
-  // Determine how many batches today
+  // Determine how many seasoning batches today (6-12)
   const rand = rng();
   let count;
   if (rand < 0.60) {
     count = 6 + Math.floor(rng() * 3); // 6,7,8
   } else if (rand < 0.85) {
-    count = 9 + Math.floor(rng() * 4); // 9,10,11,12
+    count = 9 + Math.floor(rng() * 3); // 9,10,11
   } else {
-    count = 13 + Math.floor(rng() * 3); // 13,14,15
+    count = 12 + Math.floor(rng() * 2); // 12,13
   }
 
+  // Seasoning products: daily rotation from pool
+  const seasoningPool = [...SEASONING_PRODUCTS];
+  const seasoningOffset = (dayIdx * 7 + Math.floor(rng() * 3)) % Math.max(seasoningPool.length, 1);
   const selected = [];
-  const usedIndices = new Set();
+  const usedCodes = new Set();
 
-  // Always include 2-4 core products (repeating staples)
-  const coreCount = 2 + Math.floor(rng() * 3); // 2,3,4
-  const shuffledCore = [...CORE_PRODUCT_INDICES].sort(() => rng() - 0.5);
-  for (let i = 0; i < Math.min(coreCount, shuffledCore.length); i++) {
-    const idx = ((shuffledCore[i] + Math.floor(dayIdx / 2)) % PRODUCTS.length + PRODUCTS.length) % PRODUCTS.length;
-    if (!usedIndices.has(idx)) {
-      usedIndices.add(idx);
-      selected.push(PRODUCTS[idx]);
+  for (let i = 0; i < count && selected.length < count; i++) {
+    const idx = (seasoningOffset + i) % seasoningPool.length;
+    const prod = seasoningPool[idx];
+    if (prod && !usedCodes.has(prod.code)) {
+      usedCodes.add(prod.code);
+      selected.push(prod);
     }
   }
 
-  // Fill remaining slots with rotating regular + occasional products
-  const weekIdx = Math.floor(dayIdx / 6);
-  let fillIdx = 0;
-  while (selected.length < count) {
-    const offset = (weekIdx * 13 + fillIdx * 7 + dayIdx * 3) % PRODUCTS.length;
-    const idx = (offset + PRODUCTS.length) % PRODUCTS.length;
-    if (!usedIndices.has(idx)) {
-      usedIndices.add(idx);
-      selected.push(PRODUCTS[idx]);
+  // Add 2-3 blended variety products on Mon/Wed/Fri (3 days a week)
+  const dow = d.getDay(); // 1=Mon, 3=Wed, 5=Fri
+  if ([1, 3, 5].includes(dow) && BLENDED_VARIETY_PRODUCTS.length > 0) {
+    const blendedCount = 2 + Math.floor(rng() * 2); // 2 or 3
+    const blendedOffset = (dayIdx * 5 + 3) % Math.max(BLENDED_VARIETY_PRODUCTS.length, 1);
+    for (let i = 0; i < blendedCount; i++) {
+      const idx = (blendedOffset + i) % BLENDED_VARIETY_PRODUCTS.length;
+      const prod = BLENDED_VARIETY_PRODUCTS[idx];
+      if (prod && !usedCodes.has(prod.code)) {
+        usedCodes.add(prod.code);
+        selected.push(prod);
+      }
     }
-    fillIdx++;
-    if (fillIdx > PRODUCTS.length) break; // safety
   }
 
-  return selected.slice(0, count);
+  return selected;
 }
 
 /**
@@ -20858,6 +20864,7 @@ export function buildBatchRecord({
     actualQty: effectiveActualQty,
     yieldPct: effectiveYieldPct,
     status, // 'Completed' | 'Pending' | 'Not Recorded'
+    cleaningStatus: isCompleted ? 'Cleaned' : 'Pending', // Vessels & area cleaned after batch
     ingredients,
     formulaSummary: {
       totalFormulaPct: Math.round(totalFormulaPct * 100) / 100,
@@ -20925,8 +20932,8 @@ export function generateDayBatches(dateStr) {
   const dateSeed = year * 10000 + month * 100 + day;
   const rng = seeded(dateSeed * 6271 + 99991);
 
-  // Realistic yield pool: mostly 96-100%, occasionally lower
-  const yieldPool = [1.00, 1.00, 1.00, 0.99, 0.99, 0.98, 0.98, 0.97, 0.96, 0.95, 1.00, 0.99, 1.00, 0.98, 0.99];
+  // Realistic yield pool: actual output always >= 1kg (slight gains from moisture absorption etc.)
+  const yieldPool = [1.01, 1.01, 1.02, 1.01, 1.00, 1.01, 1.02, 1.01, 1.01, 1.00, 1.02, 1.01, 1.00, 1.01, 1.02];
 
   const batches = [];
   prods.forEach((product, idx) => {

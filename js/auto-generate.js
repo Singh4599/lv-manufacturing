@@ -20792,7 +20792,9 @@ export function buildBatchRecord({
   status = 'Completed',
   actualQty = null,
   yieldPct = null,
-  qualityPassed = true
+  qualityPassed = true,
+  previousProductName = '–',
+  nextProductName = '–'
 }) {
   const displayDate = formatDate(dateStr);
   const batchNo = generateBatchNumber(product.code, dateStr, seq, product.name);
@@ -20865,6 +20867,13 @@ export function buildBatchRecord({
     yieldPct: effectiveYieldPct,
     status, // 'Completed' | 'Pending' | 'Not Recorded'
     cleaningStatus: isCompleted ? 'Cleaned' : 'Pending', // Vessels & area cleaned after batch
+    machineName: 'Blender',
+    cleaningDone: isCompleted ? 'Yes' : 'No',
+    cleaningMethod: 'Dry',
+    allergenCheck: 'Yes',
+    checkedBy: 'Vishal',
+    previousProductName,
+    nextProductName,
     ingredients,
     formulaSummary: {
       totalFormulaPct: Math.round(totalFormulaPct * 100) / 100,
@@ -20955,7 +20964,9 @@ export function generateDayBatches(dateStr) {
       status,
       actualQty,
       yieldPct,
-      qualityPassed: !isFuture
+      qualityPassed: !isFuture,
+      previousProductName: idx > 0 ? prods[idx - 1].name : '–',
+      nextProductName: idx < prods.length - 1 ? prods[idx + 1].name : '–'
     });
 
     batches.push(batch);

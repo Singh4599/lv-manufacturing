@@ -295,7 +295,7 @@ function renderMasterTable() {
   if (total === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center py-8 text-muted">
+        <td colspan="16" class="text-center py-8 text-muted">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
           No manufacturing records found for the selected dates or search criteria.<br/>
           <span class="text-sm">Try choosing a wider date range or clearing the search query.</span>
@@ -328,14 +328,22 @@ function renderMasterTable() {
       <tr class="table-row-hover" data-batch-id="${b.id || b.batchNo}">
         <td class="text-center font-mono text-muted">${srNo}</td>
         <td>${b.displayDate || formatDate(b.date)}</td>
-        <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
         <td><strong>${b.productName || '–'}</strong></td>
+        <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
+        <td style="font-size:12px; color:#6b7280;">${b.previousProductName || '–'}</td>
+        <td style="font-size:12px; color:#6b7280;">${b.nextProductName || '–'}</td>
+        <td class="text-center" style="font-size:12px; font-weight:600;">${b.machineName || 'Blender'}</td>
         <td class="text-right font-mono">${plannedDisplay}</td>
         <td class="text-right font-mono">${actualDisplay}</td>
         <td class="text-right font-mono">${yieldDisplay}</td>
         <td class="text-center">
           <span class="status-pill ${cleaningClass}">${cleaningDisplay}</span>
         </td>
+        <td class="text-center" style="font-size:12px;">${b.cleaningMethod || 'Dry'}</td>
+        <td class="text-center">
+          <span style="font-size:12px; font-weight:700; color:${b.allergenCheck === 'Yes' ? '#16a34a' : '#dc2626'};">${b.allergenCheck || 'Yes'}</span>
+        </td>
+        <td class="text-center" style="font-size:12px; font-weight:600;">${b.checkedBy || 'Vishal'}</td>
         <td class="text-center">
           <span class="status-pill ${badgeClass}">${b.status || 'Pending'}</span>
         </td>
@@ -384,7 +392,7 @@ function renderTableLoading() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center py-8 text-muted">
+        <td colspan="16" class="text-center py-8 text-muted">
           <div class="spinner-sm"></div>
           Loading manufacturing records from Cloud Firestore...
         </td>
@@ -507,11 +515,18 @@ function handleExportMasterExcel() {
   const dataToExport = state.filteredBatches.map((b, idx) => ({
     'Sr. No.': idx + 1,
     'Production Date': b.displayDate || formatDate(b.date),
-    'Batch No.': b.batchNo,
     'Product Name': b.productName,
+    'Batch No.': b.batchNo,
+    'Prev. Product': b.previousProductName || '–',
+    'Next Product': b.nextProductName || '–',
+    'Machine': b.machineName || 'Blender',
     'Planned Qty (kg)': b.plannedQty,
     'Actual Qty (kg)': b.actualQty || '',
     'Yield %': b.yieldPct != null ? `${b.yieldPct}%` : '',
+    'Cleaning Done': b.cleaningDone || 'Yes',
+    'Cleaning Method': b.cleaningMethod || 'Dry',
+    'Allergen Check': b.allergenCheck || 'Yes',
+    'Checked By': b.checkedBy || 'Vishal',
     'Status': b.status,
     'Internal RM Batches': b.traceability?.internalRMBatchNo || '',
     'Dispatch Ref No': b.dispatch?.dispatchRefNo || ''

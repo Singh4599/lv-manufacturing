@@ -351,7 +351,7 @@ function renderMasterTable() {
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
         <td style="font-size:11px; color:#6b7280;">${(() => {
           if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
-            const first2 = b.ingredients.slice(0, 2).map(ing => `${ing.name || ing} (${ing.percentage != null ? ing.percentage + '%' : '?'})`).join(', ');
+            const first2 = b.ingredients.slice(0, 2).map(ing => `${ing.name || ing} (${ing.formulaPct != null ? ing.formulaPct + '%' : '–'})`).join(', ');
             return b.ingredients.length > 2 ? first2 + ' ...' : first2;
           }
           return '–';

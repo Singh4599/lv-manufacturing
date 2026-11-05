@@ -217,6 +217,19 @@ async function refreshData() {
 
   try {
     const batches = await fetchBatches(state.dateFrom, state.dateTo);
+
+    // Sort by date then by batchNo (seq) so prev/next is 100% accurate
+    batches.sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return (a.batchNo || '').localeCompare(b.batchNo || '');
+    });
+
+    // Compute previousProductName / nextProductName from actual Firebase order
+    batches.forEach((batch, idx) => {
+      batch.previousProductName = idx > 0 ? batches[idx - 1].productName : '–';
+      batch.nextProductName = idx < batches.length - 1 ? batches[idx + 1].productName : '–';
+    });
+
     state.allBatches = batches;
 
     // Fetch stats

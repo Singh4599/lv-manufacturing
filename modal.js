@@ -318,9 +318,9 @@ function renderOverviewTab(b) {
   }).join('');
 
   const ver = b.verification || {
-    preparedBy: 'Ramesh Kumar',
-    checkedBy: 'Suresh Patel',
-    approvedBy: 'Vikram Singh'
+    preparedBy: 'Vishal',
+    checkedBy: 'Vishal',
+    approvedBy: 'Vishal'
   };
 
   return `
@@ -465,17 +465,17 @@ function renderOverviewTab(b) {
           <div class="verification-grid">
             <div class="ver-col">
               <span class="ver-role">Prepared By</span>
-              <span class="ver-name">${ver.preparedBy || 'Ramesh Kumar'}</span>
+              <span class="ver-name">${ver.preparedBy || 'Vishal'}</span>
               <span class="ver-sign">✔ Sign verified</span>
             </div>
             <div class="ver-col">
               <span class="ver-role">Checked By</span>
-              <span class="ver-name">${ver.checkedBy || 'Suresh Patel'}</span>
+              <span class="ver-name">${ver.checkedBy || 'Vishal'}</span>
               <span class="ver-sign">✔ Sign verified</span>
             </div>
             <div class="ver-col">
               <span class="ver-role">Approved By</span>
-              <span class="ver-name">${ver.approvedBy || 'Vikram Singh'}</span>
+              <span class="ver-name">${ver.approvedBy || 'Vishal'}</span>
               <span class="ver-sign">✔ Sign verified</span>
             </div>
           </div>

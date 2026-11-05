@@ -14,7 +14,7 @@ import {
   generateDispatchRefNo,
   generatePackagingLot
 } from './calculations.js';
-import { SEASONING_PRODUCT_LIST } from './seasoning-products.js';
+import { SEASONING_POOL_DATA } from './seasoning-pool-data.js';
 
 /**
  * Get initials from a name — first letter of EVERY word, uppercase.
@@ -20592,14 +20592,21 @@ export const DEFAULT_WEEKLY_SCHEDULE = {
 };
 
 // ── REALISTIC PRODUCTION SCHEDULING ──────────────────────────────────────────
-// SEASONING pool: Everything except Blended Spices (Chilli Powder, Single Spices, Chutney, Salt, Whole Spices, Jain products)
-const SEASONING_POOL = PRODUCTS.filter(p =>
-  !['Blended Spices', 'Jain Blended Spices'].includes(p.category)
-);
-// BLENDED pool: Blended Spices + Jain Blended (kept for reference but not used in scheduling)
-const BLENDED_POOL = PRODUCTS.filter(p =>
-  ['Blended Spices', 'Jain Blended Spices'].includes(p.category)
-);
+// SEASONING pool: 818 real products from Seasoning.xlsx with ingredients from enriched_products.csv
+const SEASONING_POOL = SEASONING_POOL_DATA.map(p => ({
+  code: p.code,
+  name: p.name,
+  category: 'Seasoning',
+  defaultQty: p.defaultQty || 1.0,
+  packSize: p.packSize || '100 g',
+  recipe: (p.ingredients || []).map((ing, idx) => ({
+    srNo: idx + 1,
+    name: ing,
+    rmBatchNo: ing.replace(/[^A-Z]/g, '').slice(0,3) + '1026',
+    formulaPct: parseFloat((100 / (p.ingredients.length)).toFixed(2))
+  }))
+}));
+const BLENDED_POOL = [];
 
 // Keep old aliases for backward compat (not used for scheduling anymore)
 const SEASONING_PRODUCTS = SEASONING_POOL;
@@ -20634,28 +20641,33 @@ export function getProductsForDate(dateStr) {
   const dayIdx = Math.floor((d - base) / 86400000);
   const rng = seeded(dayIdx * 7919 + 31337);
 
-  // Total batches per day: 8-13
+  // Total batches per day distribution (minimum 8):
+  // 40% → 10 | 20% → 12 | 20% → 8 | 10% → 15 | 10% → 11 or 13
   const rand = rng();
   let totalCount;
-  if (rand < 0.60) {
-    totalCount = 8 + Math.floor(rng() * 2);   // 8 or 9  (60% of days)
-  } else if (rand < 0.85) {
-    totalCount = 10 + Math.floor(rng() * 2);  // 10 or 11 (25% of days)
+  if (rand < 0.40) {
+    totalCount = 10;         // 40% of days
+  } else if (rand < 0.60) {
+    totalCount = 12;         // 20% of days
+  } else if (rand < 0.80) {
+    totalCount = 8;          // 20% of days
+  } else if (rand < 0.90) {
+    totalCount = 15;         // 10% of days
   } else {
-    totalCount = 12 + Math.floor(rng() * 2);  // 12 or 13 (15% of days)
+    totalCount = rng() < 0.5 ? 11 : 13;  // 10% of days (11 or 13)
   }
 
   // 100% seasoning only — no blended products
   const totalCount_all = totalCount;
-  const usedCodes = new Set();
+  const usedNames = new Set();
   const selected = [];
 
-  // Pick seasoning products only (rotating offset per day)
-  const sOffset = (dayIdx * 7 + Math.floor(rng() * 3)) % Math.max(SEASONING_POOL.length, 1);
-  for (let i = 0; selected.length < totalCount_all && i < SEASONING_POOL.length * 2; i++) {
+  // Pick seasoning products only (rotating offset per day, skip used names)
+  const sOffset = (dayIdx * 13 + Math.floor(rng() * 7)) % Math.max(SEASONING_POOL.length, 1);
+  for (let i = 0; selected.length < totalCount_all && i < SEASONING_POOL.length * 3; i++) {
     const prod = SEASONING_POOL[(sOffset + i) % SEASONING_POOL.length];
-    if (prod && !usedCodes.has(prod.code)) {
-      usedCodes.add(prod.code);
+    if (prod && !usedNames.has(prod.name)) {
+      usedNames.add(prod.name);
       selected.push(prod);
     }
   }

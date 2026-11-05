@@ -38,8 +38,8 @@ const state = {
   filteredBatches: [],
   currentPage: 1,
   pageSize: 10,
-  dateMode: 'custom_range', // 'today' | 'custom_range'
-  dateFrom: '2026-04-01',
+  dateMode: 'today',
+  dateFrom: formatDateISO(new Date()),
   dateTo: formatDateISO(new Date()),
   searchQuery: '',
   stats: {
@@ -56,6 +56,15 @@ const state = {
  */
 document.addEventListener('DOMContentLoaded', async () => {
   initModal();
+
+  // Default to Today view on load
+  const todayStr = formatDateISO(new Date());
+  state.dateMode = 'today';
+  state.dateFrom = todayStr;
+  state.dateTo = todayStr;
+  const btnToday = document.getElementById('btnFilterToday');
+  if (btnToday) btnToday.classList.add('active');
+
   setupEventListeners();
 
   // Set default date range button text
@@ -114,6 +123,27 @@ function setupEventListeners() {
       refreshData();
     });
   }
+
+  // Prev / Next Day buttons
+  function shiftDay(delta) {
+    // If not in single-day mode, snap to today first
+    const currentDate = state.dateFrom === state.dateTo ? state.dateFrom : formatDateISO(new Date());
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    const newDateStr = formatDateISO(d);
+    state.dateMode = 'today';
+    state.dateFrom = newDateStr;
+    state.dateTo = newDateStr;
+    state.currentPage = 1;
+    const btnToday = document.getElementById('btnFilterToday');
+    if (btnToday) btnToday.classList.remove('active');
+    updateDateRangeButtonText();
+    refreshData();
+  }
+  const btnPrevDay = document.getElementById('btnPrevDay');
+  if (btnPrevDay) btnPrevDay.addEventListener('click', () => shiftDay(-1));
+  const btnNextDay = document.getElementById('btnNextDay');
+  if (btnNextDay) btnNextDay.addEventListener('click', () => shiftDay(1));
 
   // Date Range Picker Dropdown Button
   const btnDateRange = document.getElementById('btnDateRangeDropdown');
@@ -357,7 +387,13 @@ function renderMasterTable() {
         <td>${b.displayDate || formatDate(b.date)}</td>
         <td><strong>${b.productName || '–'}</strong></td>
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
-        <td style="font-size:11px; color:#6b7280;">–</td>
+        <td style="font-size:11px; color:#6b7280;">${(() => {
+          if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
+            const names = b.ingredients.slice(0, 3).map(ing => ing.name || ing).join(', ');
+            return b.ingredients.length > 3 ? names + ' ...' : names;
+          }
+          return '–';
+        })()}</td>
         <td class="text-center" style="font-size:12px; font-weight:600;">${b.machineName || 'Blender'}</td>
         <td class="text-right font-mono">${plannedDisplay}</td>
         <td class="text-right font-mono">${actualDisplay}</td>

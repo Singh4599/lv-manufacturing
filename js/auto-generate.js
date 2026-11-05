@@ -20794,7 +20794,8 @@ export function buildBatchRecord({
   yieldPct = null,
   qualityPassed = true,
   previousProductName = '–',
-  nextProductName = '–'
+  nextProductName = '–',
+  cleaningMethod = 'Dry'
 }) {
   const displayDate = formatDate(dateStr);
   const batchNo = generateBatchNumber(product.code, dateStr, seq, product.name);
@@ -20869,7 +20870,7 @@ export function buildBatchRecord({
     cleaningStatus: isCompleted ? 'Cleaned' : 'Pending', // Vessels & area cleaned after batch
     machineName: 'Blender',
     cleaningDone: isCompleted ? 'Yes' : 'No',
-    cleaningMethod: 'Dry',
+    cleaningMethod,
     allergenCheck: 'Yes',
     checkedBy: 'Vishal',
     previousProductName,
@@ -20944,6 +20945,21 @@ export function generateDayBatches(dateStr) {
   // Realistic yield pool: actual output always >= 1kg (slight gains from moisture absorption etc.)
   const yieldPool = [1.01, 1.01, 1.02, 1.01, 1.00, 1.01, 1.02, 1.01, 1.01, 1.00, 1.02, 1.01, 1.00, 1.01, 1.02];
 
+  // Fetch adjacent-day products for day-boundary prev/next
+  const prevDayDate = new Date(dateStr + 'T00:00:00');
+  prevDayDate.setDate(prevDayDate.getDate() - 1);
+  // Skip back past Sunday
+  while (prevDayDate.getDay() === 0) prevDayDate.setDate(prevDayDate.getDate() - 1);
+  const prevDayStr = prevDayDate.toISOString().slice(0, 10);
+  const prevDayProds = getProductsForDate(prevDayStr);
+
+  const nextDayDate = new Date(dateStr + 'T00:00:00');
+  nextDayDate.setDate(nextDayDate.getDate() + 1);
+  // Skip forward past Sunday
+  while (nextDayDate.getDay() === 0) nextDayDate.setDate(nextDayDate.getDate() + 1);
+  const nextDayStr = nextDayDate.toISOString().slice(0, 10);
+  const nextDayProds = getProductsForDate(nextDayStr);
+
   const batches = [];
   prods.forEach((product, idx) => {
     let actualQty = null;
@@ -20956,6 +20972,26 @@ export function generateDayBatches(dateStr) {
       yieldPct = Math.round(yieldFactor * 10000) / 100;
     }
 
+    // Previous product: same-day prev, or last product of previous working day
+    let prevProductName = '–';
+    if (idx > 0) {
+      prevProductName = prods[idx - 1].name;
+    } else if (prevDayProds && prevDayProds.length > 0) {
+      prevProductName = prevDayProds[prevDayProds.length - 1].name;
+    }
+
+    // Next product: same-day next, or first product of next working day
+    let nextProductName = '–';
+    if (idx < prods.length - 1) {
+      nextProductName = prods[idx + 1].name;
+    } else if (nextDayProds && nextDayProds.length > 0) {
+      nextProductName = nextDayProds[0].name;
+    }
+
+    // Cleaning method: Wet for Blended/Jain Blended, Dry for all others
+    const isBlended = product.category === 'Blended Spices' || product.category === 'Jain Blended Spices';
+    const cleaningMethod = isBlended ? 'Wet' : 'Dry';
+
     const batch = buildBatchRecord({
       product,
       dateStr,
@@ -20965,8 +21001,9 @@ export function generateDayBatches(dateStr) {
       actualQty,
       yieldPct,
       qualityPassed: !isFuture,
-      previousProductName: idx > 0 ? prods[idx - 1].name : '–',
-      nextProductName: idx < prods.length - 1 ? prods[idx + 1].name : '–'
+      previousProductName: prevProductName,
+      nextProductName: nextProductName,
+      cleaningMethod
     });
 
     batches.push(batch);

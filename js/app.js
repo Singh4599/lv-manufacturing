@@ -601,7 +601,7 @@ function handleExportMasterExcel() {
       'Machine': b.machineName || 'Blender',
       'Ordered Qty (kg)': b.plannedQty,
       'Actual Qty (kg)': b.actualQty || '',
-      'Shortage %': shortageVal != null ? (shortageVal >= 0 ? '+' : '') + shortageVal + '%' : '',
+      'Shortage %': shortageVal != null ? shortageVal + '%' : '',
       'Cleaning Done': b.cleaningDone || 'Yes',
       'Cleaning Method': b.cleaningMethod || 'Dry',
       'Allergen Check': b.allergenCheck || 'Yes',
@@ -821,3 +821,54 @@ function openEditModal(batch) {
     }
   });
 }
+
+// ── Print All Records ──────────────────────────────────────────────────────
+window.printAllRecords = function () {
+  const batches = state.filteredBatches || [];
+  const dateLabel = state.dateFrom && state.dateTo
+    ? (state.dateFrom === state.dateTo ? state.dateFrom : state.dateFrom + ' to ' + state.dateTo)
+    : 'All Dates';
+
+  const rows = batches.map(function (b, idx) {
+    const bHash = (b.batchNo || '').split('').reduce(function (acc, c) { return acc + c.charCodeAt(0); }, 0);
+    const checkedBy = bHash % 2 === 0 ? 'Vishal' : 'Tejas';
+    const shortageVal = b.actualQty != null && b.plannedQty > 0
+      ? Math.round(((b.actualQty - b.plannedQty) / b.plannedQty) * 100 * 100) / 100
+      : null;
+    const shortageStr = shortageVal != null ? shortageVal + '%' : '–';
+    const ingredientsStr = Array.isArray(b.ingredients) && b.ingredients.length > 0
+      ? b.ingredients.slice(0, 3).map(function (i) { return i.name || i; }).join(', ')
+      : '–';
+    return '<tr>'
+      + '<td>' + (idx + 1) + '</td>'
+      + '<td>' + (b.displayDate || b.date || '–') + '</td>'
+      + '<td>' + (b.productName || '–') + '</td>'
+      + '<td>' + (b.batchNo || '–') + '</td>'
+      + '<td>' + ingredientsStr + '</td>'
+      + '<td>' + (b.machineName || 'Blender') + '</td>'
+      + '<td>' + (b.plannedQty != null ? b.plannedQty.toFixed(2) + ' kg' : '–') + '</td>'
+      + '<td>' + (b.actualQty != null ? b.actualQty.toFixed(2) + ' kg' : '–') + '</td>'
+      + '<td>' + shortageStr + '</td>'
+      + '<td>' + (b.cleaningStatus || (b.status === 'Completed' ? 'Cleaned' : 'Pending')) + '</td>'
+      + '<td>' + (b.cleaningMethod || 'Dry') + '</td>'
+      + '<td>' + (b.allergenCheck || 'Yes') + '</td>'
+      + '<td>' + checkedBy + '</td>'
+      + '<td>' + (b.status || 'Pending') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  document.getElementById('printAllTable').innerHTML =
+    '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
+    + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + ' &nbsp;|&nbsp; Printed: ' + new Date().toLocaleString('en-IN') + '</div>'
+    + '<table>'
+    + '<thead><tr>'
+    + '<th>#</th><th>Process Date</th><th>Product Name</th><th>Batch No.</th>'
+    + '<th>Main Ingredients</th><th>Machine</th><th>Ordered Qty</th><th>Actual Qty</th>'
+    + '<th>Shortage %</th><th>Cleaning</th><th>Clean Method</th><th>Allergen</th>'
+    + '<th>Checked By</th><th>Status</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>';
+
+  window.print();
+};

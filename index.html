@@ -7,14 +7,16 @@
   <link rel="stylesheet" href="./css/style.css" />
   <style>
     @media print {
-      @page { size: A4 landscape; margin: 10mm; }
-      .sidebar, .btn-today-pill, #btnPrevDay, #btnNextDay, .btn-export-outline,
-      .btn-dropdown-select, .dropdown-container, #btnNewBatch,
-      .table-controls-bar .controls-right { display: none !important; }
-      .main-content { margin-left: 0 !important; padding: 0 !important; }
-      .master-table { font-size: 10px !important; }
-      .master-table th, .master-table td { padding: 4px 5px !important; }
+      @page { size: A4 landscape; margin: 8mm; }
+      body > *, .sidebar, .top-bar { display: none !important; }
+      #printAllTable { display: block !important; }
+      #printAllTable table { width: 100%; border-collapse: collapse; font-size: 9px; font-family: Arial, sans-serif; }
+      #printAllTable th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; padding: 5px 4px; font-weight: 700; border: 1px solid #cbd5e1; text-align: left; }
+      #printAllTable td { padding: 4px 4px; border: 1px solid #e2e8f0; }
+      #printAllTable .print-header { font-size: 13px; font-weight: 800; margin-bottom: 6px; }
+      #printAllTable .print-meta { font-size: 10px; color: #64748b; margin-bottom: 8px; }
     }
+    #printAllTable { display: none; }
   </style>
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
   <!-- SheetJS CDN for Excel Export -->
@@ -166,7 +168,7 @@
               aria-label="Search records"
             />
           </div>
-          <button class="btn-export-outline" id="btnPrintList" title="Print List" onclick="window.print()" style="background:#fff; border:1px solid #D1D5DB; color:#374151;">
+          <button class="btn-export-outline" id="btnPrintList" title="Print List" onclick="printAllRecords()" style="background:#fff; border:1px solid #D1D5DB; color:#374151;">
             <span>🖨</span> Print A4
           </button>
           <button class="btn-export-outline" id="btnExportMasterExcel" title="Export to Excel">
@@ -226,5 +228,6 @@
 
   <!-- Main ES Module Script -->
   <script type="module" src="./js/app.js"></script>
+  <div id="printAllTable"></div>
 </body>
 </html>

@@ -20591,14 +20591,18 @@ export const DEFAULT_WEEKLY_SCHEDULE = {
 };
 
 // ── REALISTIC PRODUCTION SCHEDULING ──────────────────────────────────────────
-// Seasoning products = daily manufacturing (Blended Spices, Jain Blended Spices, Chilli Powder, Single Spices)
-const SEASONING_PRODUCTS = PRODUCTS.filter(p =>
-  ['Blended Spices', 'Jain Blended Spices', 'Chilli Powder', 'Single Spices Powder'].includes(p.category)
+// SEASONING pool (90% of daily production): Chilli Powder, Single Spices, Chutney, Salt, Whole Spices, Jain products (non-blended)
+const SEASONING_POOL = PRODUCTS.filter(p =>
+  ['Chilli Powder', 'Single Spices Powder', 'Chutney Powders', 'Salt', 'Whole Spices'].includes(p.category)
 );
-// Blended/variety products = manufactured 2-3 times per week
-const BLENDED_VARIETY_PRODUCTS = PRODUCTS.filter(p =>
-  ['Chutney Powders', 'Salt', 'Whole Spices'].includes(p.category)
+// BLENDED pool (10% of daily production): Blended Spices + Jain Blended Spices
+const BLENDED_POOL = PRODUCTS.filter(p =>
+  ['Blended Spices', 'Jain Blended Spices'].includes(p.category)
 );
+
+// Keep old aliases for backward compat (not used for scheduling anymore)
+const SEASONING_PRODUCTS = SEASONING_POOL;
+const BLENDED_VARIETY_PRODUCTS = BLENDED_POOL;
 
 // Seeded deterministic RNG (Mulberry32)
 function seeded(seed) {
@@ -20629,44 +20633,41 @@ export function getProductsForDate(dateStr) {
   const dayIdx = Math.floor((d - base) / 86400000);
   const rng = seeded(dayIdx * 7919 + 31337);
 
-  // Determine how many seasoning batches today (6-12)
+  // Total batches per day: 8-13
   const rand = rng();
-  let count;
+  let totalCount;
   if (rand < 0.60) {
-    count = 6 + Math.floor(rng() * 3); // 6,7,8
+    totalCount = 8 + Math.floor(rng() * 2);   // 8 or 9  (60% of days)
   } else if (rand < 0.85) {
-    count = 9 + Math.floor(rng() * 3); // 9,10,11
+    totalCount = 10 + Math.floor(rng() * 2);  // 10 or 11 (25% of days)
   } else {
-    count = 12 + Math.floor(rng() * 2); // 12,13
+    totalCount = 12 + Math.floor(rng() * 2);  // 12 or 13 (15% of days)
   }
 
-  // Seasoning products: daily rotation from pool
-  const seasoningPool = [...SEASONING_PRODUCTS];
-  const seasoningOffset = (dayIdx * 7 + Math.floor(rng() * 3)) % Math.max(seasoningPool.length, 1);
-  const selected = [];
-  const usedCodes = new Set();
+  // 90% seasoning, 10% blended — always at least 1 blended
+  const blendedCount = Math.max(1, Math.round(totalCount * 0.10));
+  const seasoningCount = totalCount - blendedCount;
 
-  for (let i = 0; i < count && selected.length < count; i++) {
-    const idx = (seasoningOffset + i) % seasoningPool.length;
-    const prod = seasoningPool[idx];
+  const usedCodes = new Set();
+  const selected = [];
+
+  // Pick seasoning products (rotating offset per day)
+  const sOffset = (dayIdx * 7 + Math.floor(rng() * 3)) % Math.max(SEASONING_POOL.length, 1);
+  for (let i = 0; selected.length < seasoningCount && i < SEASONING_POOL.length * 2; i++) {
+    const prod = SEASONING_POOL[(sOffset + i) % SEASONING_POOL.length];
     if (prod && !usedCodes.has(prod.code)) {
       usedCodes.add(prod.code);
       selected.push(prod);
     }
   }
 
-  // Add 2-3 blended variety products on Mon/Wed/Fri (3 days a week)
-  const dow = d.getDay(); // 1=Mon, 3=Wed, 5=Fri
-  if ([1, 3, 5].includes(dow) && BLENDED_VARIETY_PRODUCTS.length > 0) {
-    const blendedCount = 2 + Math.floor(rng() * 2); // 2 or 3
-    const blendedOffset = (dayIdx * 5 + 3) % Math.max(BLENDED_VARIETY_PRODUCTS.length, 1);
-    for (let i = 0; i < blendedCount; i++) {
-      const idx = (blendedOffset + i) % BLENDED_VARIETY_PRODUCTS.length;
-      const prod = BLENDED_VARIETY_PRODUCTS[idx];
-      if (prod && !usedCodes.has(prod.code)) {
-        usedCodes.add(prod.code);
-        selected.push(prod);
-      }
+  // Pick blended products (rotating offset per day)
+  const bOffset = (dayIdx * 5 + 3) % Math.max(BLENDED_POOL.length, 1);
+  for (let i = 0; selected.length < totalCount && i < BLENDED_POOL.length * 2; i++) {
+    const prod = BLENDED_POOL[(bOffset + i) % BLENDED_POOL.length];
+    if (prod && !usedCodes.has(prod.code)) {
+      usedCodes.add(prod.code);
+      selected.push(prod);
     }
   }
 

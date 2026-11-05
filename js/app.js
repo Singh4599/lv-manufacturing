@@ -410,7 +410,7 @@ function renderMasterTable() {
         <td>${b.displayDate || formatDate(b.date)}</td>
         <td><strong>${b.productName || '–'}</strong></td>
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
-        <td style="font-size:11px; color:#6b7280; white-space:normal; word-break:break-word; max-width:180px;">${(() => {
+        <td style="font-size:11px; color:#6b7280; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${(() => {
           if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
             return b.ingredients.slice(0, 3).map(ing => ing.name || ing).join(', ') + (b.ingredients.length > 3 ? ' …' : '');
           }

@@ -14,6 +14,7 @@ import {
   generateDispatchRefNo,
   generatePackagingLot
 } from './calculations.js';
+import { SEASONING_PRODUCT_LIST } from './seasoning-products.js';
 
 /**
  * Get initials from a name — first letter of EVERY word, uppercase.
@@ -20591,14 +20592,13 @@ export const DEFAULT_WEEKLY_SCHEDULE = {
 };
 
 // ── REALISTIC PRODUCTION SCHEDULING ──────────────────────────────────────────
-// SEASONING pool (90% of daily production): Chilli Powder, Single Spices, Chutney, Salt, Whole Spices, Jain products (non-blended)
-const SEASONING_POOL = PRODUCTS.filter(p =>
-  ['Chilli Powder', 'Single Spices Powder', 'Chutney Powders', 'Salt', 'Whole Spices'].includes(p.category)
-);
-// BLENDED pool (10% of daily production): Blended Spices + Jain Blended Spices
-const BLENDED_POOL = PRODUCTS.filter(p =>
-  ['Blended Spices', 'Jain Blended Spices'].includes(p.category)
-);
+// SEASONING pool: Only products from 365 Spicery Pricelist (Seasoning + Jain Seasoning sheets)
+// Normalise names for fuzzy match (lowercase, trim)
+function _normName(n) { return (n || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+const _EXCEL_SEASONING_SET = new Set(SEASONING_PRODUCT_LIST.map(_normName));
+const SEASONING_POOL = PRODUCTS.filter(p => _EXCEL_SEASONING_SET.has(_normName(p.name)));
+// BLENDED pool: products NOT in seasoning list (fallback, kept empty for now)
+const BLENDED_POOL = [];
 
 // Keep old aliases for backward compat (not used for scheduling anymore)
 const SEASONING_PRODUCTS = SEASONING_POOL;

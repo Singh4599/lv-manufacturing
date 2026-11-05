@@ -33,6 +33,29 @@ import {
 } from '../modal.js';
 
 // Application State
+
+// ── Allergen Detection ─────────────────────────────────────────────────────
+// Returns 'Yes' if any ingredient matches a major allergen, else 'No'
+function detectAllergen(ingredients) {
+  if (!Array.isArray(ingredients) || ingredients.length === 0) return 'No';
+  const ALLERGEN_KEYWORDS = [
+    'sesame', 'til', 'gingelly',
+    'mustard', 'mustard seeds', 'mustard powder',
+    'peanut', 'groundnut', 'mungfali',
+    'cashew', 'almond', 'pistachio', 'walnut', 'pecan', 'hazelnut', 'macadamia', 'pine nut', 'brazil nut',
+    'milk powder', 'cheese powder', 'butter powder', 'cream powder', 'whey', 'lactose', 'dairy',
+    'soya', 'soy ', 'soybean', 'soya flour', 'soya protein', 'soya lecithin', 'textured vegetable protein', 'tvp'
+  ];
+  for (var i = 0; i < ingredients.length; i++) {
+    var ingName = ((ingredients[i].name || ingredients[i]) + '').toLowerCase();
+    for (var j = 0; j < ALLERGEN_KEYWORDS.length; j++) {
+      if (ingName.indexOf(ALLERGEN_KEYWORDS[j]) !== -1) return 'Yes';
+    }
+  }
+  return 'No';
+}
+
+
 const state = {
   allBatches: [],
   filteredBatches: [],
@@ -402,7 +425,7 @@ function renderMasterTable() {
         </td>
         <td class="text-center" style="font-size:12px;">${b.cleaningMethod || 'Dry'}</td>
         <td class="text-center">
-          <span style="font-size:12px; font-weight:700; color:${b.allergenCheck === 'Yes' ? '#16a34a' : '#dc2626'};">${b.allergenCheck || 'Yes'}</span>
+          <span style="font-size:12px; font-weight:700; color:${detectAllergen(b.ingredients) === 'Yes' ? '#dc2626' : '#16a34a'};">${detectAllergen(b.ingredients)}</span>
         </td>
         <td class="text-center" style="font-size:12px; font-weight:600;">${checkedByName}</td>
         <td class="text-center">
@@ -603,7 +626,7 @@ function handleExportMasterExcel() {
       'Shortage %': shortageVal != null ? shortageVal + '%' : '',
       'Cleaning Done': b.cleaningDone || 'Yes',
       'Cleaning Method': b.cleaningMethod || 'Dry',
-      'Allergen Check': b.allergenCheck || 'Yes',
+      'Allergen Check': detectAllergen(b.ingredients),
       'Checked By': checkedByName,
       'Status': b.status,
       'Internal RM Batches': b.traceability?.internalRMBatchNo || '',
@@ -885,21 +908,11 @@ function _buildAndPrint(batches, dateLabel) {
       + '<td style="text-align:center;font-weight:700;color:' + (shortageVal != null && shortageVal > 0 ? '#16a34a' : '#374151') + ';">' + shortageStr + '</td>'
       + '<td style="text-align:center;">' + (b.cleaningStatus || (b.status === 'Completed' ? 'Cleaned' : 'Pending')) + '</td>'
       + '<td style="text-align:center;">' + (b.cleaningMethod || 'Dry') + '</td>'
-      + '<td style="text-align:center;font-weight:700;color:#16a34a;">' + (b.allergenCheck || 'Yes') + '</td>'
+      + '<td style="text-align:center;font-weight:700;color:' + (detectAllergen(b.ingredients) === 'Yes' ? '#dc2626' : '#16a34a') + ';">' + detectAllergen(b.ingredients) + '</td>'
       + '<td style="text-align:center;font-weight:600;">' + checkedBy + '</td>'
       + '<td style="text-align:center;font-weight:700;color:' + (b.status === 'Completed' ? '#16a34a' : '#f59e0b') + ';">' + (b.status || 'Pending') + '</td>'
       + '</tr>';
   }).join('');
-
-  // Add blank rows to fill page if fewer than MIN_ROWS
-  const MIN_ROWS = 25;
-  var blankRows = '';
-  if (batches.length < MIN_ROWS) {
-    var blanksNeeded = MIN_ROWS - batches.length;
-    for (var bi = 0; bi < blanksNeeded; bi++) {
-      blankRows += '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-    }
-  }
 
   document.getElementById('printAllTable').innerHTML =
     '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
@@ -918,7 +931,7 @@ function _buildAndPrint(batches, dateLabel) {
     + '<th>Shortage %</th><th>Cleaning</th><th>Clean Method</th><th>Allergen</th>'
     + '<th>Checked By</th><th>Status</th>'
     + '</tr></thead>'
-    + '<tbody>' + rows + blankRows + '</tbody>'
+    + '<tbody>' + rows + '</tbody>'
     + '</table>';
 
   window.print();

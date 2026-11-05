@@ -20644,27 +20644,15 @@ export function getProductsForDate(dateStr) {
     totalCount = 12 + Math.floor(rng() * 2);  // 12 or 13 (15% of days)
   }
 
-  // 90% seasoning, 10% blended — always at least 1 blended
-  const blendedCount = Math.max(1, Math.round(totalCount * 0.10));
-  const seasoningCount = totalCount - blendedCount;
-
+  // 100% seasoning only — no blended products
+  const totalCount_all = totalCount;
   const usedCodes = new Set();
   const selected = [];
 
-  // Pick seasoning products (rotating offset per day)
+  // Pick seasoning products only (rotating offset per day)
   const sOffset = (dayIdx * 7 + Math.floor(rng() * 3)) % Math.max(SEASONING_POOL.length, 1);
-  for (let i = 0; selected.length < seasoningCount && i < SEASONING_POOL.length * 2; i++) {
+  for (let i = 0; selected.length < totalCount_all && i < SEASONING_POOL.length * 2; i++) {
     const prod = SEASONING_POOL[(sOffset + i) % SEASONING_POOL.length];
-    if (prod && !usedCodes.has(prod.code)) {
-      usedCodes.add(prod.code);
-      selected.push(prod);
-    }
-  }
-
-  // Pick blended products (rotating offset per day)
-  const bOffset = (dayIdx * 5 + 3) % Math.max(BLENDED_POOL.length, 1);
-  for (let i = 0; selected.length < totalCount && i < BLENDED_POOL.length * 2; i++) {
-    const prod = BLENDED_POOL[(bOffset + i) % BLENDED_POOL.length];
     if (prod && !usedCodes.has(prod.code)) {
       usedCodes.add(prod.code);
       selected.push(prod);
@@ -20873,7 +20861,7 @@ export function buildBatchRecord({
     cleaningDone: isCompleted ? 'Yes' : 'No',
     cleaningMethod,
     allergenCheck: 'Yes',
-    checkedBy: 'Vishal',
+    checkedBy: batchNo.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 2 === 0 ? 'Vishal' : 'Tejas',
     previousProductName,
     nextProductName,
     ingredients,
@@ -20916,7 +20904,7 @@ export function buildBatchRecord({
     remarks: 'Batch manufactured as per approved recipe & process.',
     verification: {
       preparedBy: 'Vishal',
-      checkedBy: 'Vishal',
+      checkedBy: batchNo.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 2 === 0 ? 'Vishal' : 'Tejas',
       approvedBy: 'Vishal'
     },
     processSteps: createProcessSteps(status),

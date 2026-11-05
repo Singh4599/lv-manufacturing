@@ -314,7 +314,7 @@ function renderMasterTable() {
   if (total === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="17" class="text-center py-8 text-muted">
+        <td colspan="15" class="text-center py-8 text-muted">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
           No manufacturing records found for the selected dates or search criteria.<br/>
           <span class="text-sm">Try choosing a wider date range or clearing the search query.</span>
@@ -339,7 +339,15 @@ function renderMasterTable() {
 
     const plannedDisplay = formatQty(b.plannedQty, { decimals: 2 });
     const actualDisplay = b.actualQty != null ? formatQty(b.actualQty, { decimals: 2 }) : '–';
-    const yieldDisplay = b.yieldPct != null ? formatPct(b.yieldPct) : '–';
+    // Shortage % = (actualQty - plannedQty) / plannedQty * 100 (shows overage as positive)
+    let shortageDisplay = '–';
+    if (b.actualQty != null && b.plannedQty > 0) {
+      const diff = Math.round(((b.actualQty - b.plannedQty) / b.plannedQty) * 100 * 100) / 100;
+      shortageDisplay = (diff >= 0 ? '+' : '') + diff + '%';
+    }
+    // Random but stable Vishal/Tejas based on batchNo hash
+    const batchHash = (b.batchNo || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const checkedByName = batchHash % 2 === 0 ? 'Vishal' : 'Tejas';
     const cleaningDisplay = b.cleaningStatus || (isCompleted ? 'Cleaned' : 'Pending');
     const cleaningClass = cleaningDisplay === 'Cleaned' ? 'badge-completed' : 'badge-pending';
 
@@ -349,19 +357,11 @@ function renderMasterTable() {
         <td>${b.displayDate || formatDate(b.date)}</td>
         <td><strong>${b.productName || '–'}</strong></td>
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
-        <td style="font-size:11px; color:#6b7280;">${(() => {
-          if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
-            const first2 = b.ingredients.slice(0, 2).map(ing => `${ing.name || ing} (${ing.formulaPct != null ? ing.formulaPct + '%' : '–'})`).join(', ');
-            return b.ingredients.length > 2 ? first2 + ' ...' : first2;
-          }
-          return '–';
-        })()}</td>
-        <td style="font-size:12px; color:#6b7280;">${b.previousProductName || '–'}</td>
-        <td style="font-size:12px; color:#6b7280;">${b.nextProductName || '–'}</td>
+        <td style="font-size:11px; color:#6b7280;">–</td>
         <td class="text-center" style="font-size:12px; font-weight:600;">${b.machineName || 'Blender'}</td>
         <td class="text-right font-mono">${plannedDisplay}</td>
         <td class="text-right font-mono">${actualDisplay}</td>
-        <td class="text-right font-mono">${yieldDisplay}</td>
+        <td class="text-right font-mono" style="color:${shortageDisplay.startsWith('+') ? '#16a34a' : shortageDisplay === '–' ? '#6b7280' : '#dc2626'};">${shortageDisplay}</td>
         <td class="text-center">
           <span class="status-pill ${cleaningClass}">${cleaningDisplay}</span>
         </td>
@@ -369,7 +369,7 @@ function renderMasterTable() {
         <td class="text-center">
           <span style="font-size:12px; font-weight:700; color:${b.allergenCheck === 'Yes' ? '#16a34a' : '#dc2626'};">${b.allergenCheck || 'Yes'}</span>
         </td>
-        <td class="text-center" style="font-size:12px; font-weight:600;">${b.checkedBy || 'Vishal'}</td>
+        <td class="text-center" style="font-size:12px; font-weight:600;">${checkedByName}</td>
         <td class="text-center">
           <span class="status-pill ${badgeClass}">${b.status || 'Pending'}</span>
         </td>
@@ -431,7 +431,7 @@ function renderTableLoading() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="17" class="text-center py-8 text-muted">
+        <td colspan="15" class="text-center py-8 text-muted">
           <div class="spinner-sm"></div>
           Loading manufacturing records from Cloud Firestore...
         </td>
@@ -551,25 +551,30 @@ function handleExportMasterExcel() {
     return;
   }
 
-  const dataToExport = state.filteredBatches.map((b, idx) => ({
-    'Sr. No.': idx + 1,
-    'Production Date': b.displayDate || formatDate(b.date),
-    'Product Name': b.productName,
-    'Batch No.': b.batchNo,
-    'Prev. Product': b.previousProductName || '–',
-    'Next Product': b.nextProductName || '–',
-    'Machine': b.machineName || 'Blender',
-    'Planned Qty (kg)': b.plannedQty,
-    'Actual Qty (kg)': b.actualQty || '',
-    'Yield %': b.yieldPct != null ? `${b.yieldPct}%` : '',
-    'Cleaning Done': b.cleaningDone || 'Yes',
-    'Cleaning Method': b.cleaningMethod || 'Dry',
-    'Allergen Check': b.allergenCheck || 'Yes',
-    'Checked By': b.checkedBy || 'Vishal',
-    'Status': b.status,
-    'Internal RM Batches': b.traceability?.internalRMBatchNo || '',
-    'Dispatch Ref No': b.dispatch?.dispatchRefNo || ''
-  }));
+  const dataToExport = state.filteredBatches.map((b, idx) => {
+    const bHash = (b.batchNo || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const checkedByName = bHash % 2 === 0 ? 'Vishal' : 'Tejas';
+    const shortageVal = b.actualQty != null && b.plannedQty > 0
+      ? Math.round(((b.actualQty - b.plannedQty) / b.plannedQty) * 100 * 100) / 100
+      : null;
+    return {
+      'Sr. No.': idx + 1,
+      'Process Date': b.displayDate || formatDate(b.date),
+      'Product Name': b.productName,
+      'Batch No.': b.batchNo,
+      'Machine': b.machineName || 'Blender',
+      'Ordered Qty (kg)': b.plannedQty,
+      'Actual Qty (kg)': b.actualQty || '',
+      'Shortage %': shortageVal != null ? (shortageVal >= 0 ? '+' : '') + shortageVal + '%' : '',
+      'Cleaning Done': b.cleaningDone || 'Yes',
+      'Cleaning Method': b.cleaningMethod || 'Dry',
+      'Allergen Check': b.allergenCheck || 'Yes',
+      'Checked By': checkedByName,
+      'Status': b.status,
+      'Internal RM Batches': b.traceability?.internalRMBatchNo || '',
+      'Dispatch Ref No': b.dispatch?.dispatchRefNo || ''
+    };
+  });
 
   const ws = window.XLSX.utils.json_to_sheet(dataToExport);
   const wb = window.XLSX.utils.book_new();

@@ -8,6 +8,7 @@ import {
   getStats,
   subscribeToStats,
   batchSave,
+  saveBatch,
   clearAllBatches
 } from './firebase-config.js';
 
@@ -196,6 +197,11 @@ function setupEventListeners() {
 
   // Export Excel master button
   document.getElementById('btnExportMasterExcel')?.addEventListener('click', handleExportMasterExcel);
+
+  // New Batch Entry button
+  document.getElementById('btnNewBatchEntry')?.addEventListener('click', () => {
+    openEditModal(null);
+  });
 }
 
 /**
@@ -308,7 +314,7 @@ function renderMasterTable() {
   if (total === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="16" class="text-center py-8 text-muted">
+        <td colspan="17" class="text-center py-8 text-muted">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
           No manufacturing records found for the selected dates or search criteria.<br/>
           <span class="text-sm">Try choosing a wider date range or clearing the search query.</span>
@@ -343,6 +349,13 @@ function renderMasterTable() {
         <td>${b.displayDate || formatDate(b.date)}</td>
         <td><strong>${b.productName || '–'}</strong></td>
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
+        <td style="font-size:11px; color:#6b7280;">${(() => {
+          if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
+            const first2 = b.ingredients.slice(0, 2).map(ing => `${ing.name || ing} (${ing.percentage != null ? ing.percentage + '%' : '?'})`).join(', ');
+            return b.ingredients.length > 2 ? first2 + ' ...' : first2;
+          }
+          return '–';
+        })()}</td>
         <td style="font-size:12px; color:#6b7280;">${b.previousProductName || '–'}</td>
         <td style="font-size:12px; color:#6b7280;">${b.nextProductName || '–'}</td>
         <td class="text-center" style="font-size:12px; font-weight:600;">${b.machineName || 'Blender'}</td>
@@ -360,9 +373,12 @@ function renderMasterTable() {
         <td class="text-center">
           <span class="status-pill ${badgeClass}">${b.status || 'Pending'}</span>
         </td>
-        <td class="text-center">
+        <td class="text-center" style="white-space:nowrap;">
           <button class="btn-view-row" data-action="view" data-id="${b.id || b.batchNo}">
             <span class="view-eye-icon">👁</span> View
+          </button>
+          <button class="btn-view-row" data-action="edit" data-id="${b.id || b.batchNo}" style="margin-left:4px; border-color:#4F46E5; color:#4F46E5; background:#fff;">
+            ✏️ Edit
           </button>
         </td>
       </tr>
@@ -380,6 +396,16 @@ function renderMasterTable() {
       if (found) {
         openBatchModal(found);
       }
+    });
+  });
+
+  // Attach click handler to Edit buttons
+  tbody.querySelectorAll('button[data-action="edit"]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const bId = btn.getAttribute('data-id');
+      const found = state.allBatches.find((x) => (x.id || x.batchNo) === bId);
+      openEditModal(found || null);
     });
   });
 
@@ -405,7 +431,7 @@ function renderTableLoading() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="16" class="text-center py-8 text-muted">
+        <td colspan="17" class="text-center py-8 text-muted">
           <div class="spinner-sm"></div>
           Loading manufacturing records from Cloud Firestore...
         </td>
@@ -592,6 +618,165 @@ if (btnReset) {
       alert('Error: ' + err.message);
       btnReset.disabled = false;
       btnReset.textContent = '♻ Reset & Regenerate';
+    }
+  });
+}
+
+// ── Edit / New Batch Modal ────────────────────────────────────────────────────
+
+/**
+ * Opens the Edit/New-Batch modal.
+ * @param {object|null} batch - Existing batch to prefill, or null for a new entry.
+ */
+function openEditModal(batch) {
+  // Remove any existing modal
+  const existing = document.getElementById('batchEditModal');
+  if (existing) existing.remove();
+
+  const isNew = !batch;
+  const todayISO = formatDateISO(new Date());
+
+  const val = (key, fallback = '') => (batch && batch[key] != null ? batch[key] : fallback);
+
+  const modal = document.createElement('div');
+  modal.id = 'batchEditModal';
+  modal.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.45);
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background: #fff; border-radius: 12px; padding: 32px 36px;
+      width: min(760px, 95vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25); position: relative;
+    ">
+      <button id="batchEditModalClose" style="
+        position: absolute; top: 16px; right: 20px; border: none;
+        background: none; font-size: 22px; cursor: pointer; color: #6b7280;
+        line-height: 1;
+      ">×</button>
+      <h2 style="margin: 0 0 20px; font-size: 18px; font-weight: 700; color: #1f2937;">
+        ${isNew ? '+ New Batch Entry' : '✏️ Edit Batch'}
+      </h2>
+      <form id="batchEditForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Production Date</label>
+          <input type="date" name="date" value="${val('date', todayISO)}" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Product Name</label>
+          <input type="text" name="productName" value="${val('productName')}" placeholder="e.g. Turmeric Powder" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Batch No.</label>
+          <input type="text" name="batchNo" value="${val('batchNo')}" placeholder="e.g. LVS-001" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Status</label>
+          <select name="status" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;">
+            <option value="Completed" ${val('status') === 'Completed' ? 'selected' : ''}>Completed</option>
+            <option value="Pending" ${val('status', 'Pending') === 'Pending' ? 'selected' : ''}>Pending</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Planned Qty (kg)</label>
+          <input type="number" name="plannedQty" value="${val('plannedQty')}" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Actual Qty (kg)</label>
+          <input type="number" name="actualQty" value="${val('actualQty')}" step="0.01" min="0" placeholder="0.00" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Machine Name</label>
+          <input type="text" name="machineName" value="${val('machineName', 'Blender')}" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Cleaning Done</label>
+          <select name="cleaningDone" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;">
+            <option value="Yes" ${val('cleaningDone', 'Yes') === 'Yes' ? 'selected' : ''}>Yes</option>
+            <option value="No" ${val('cleaningDone') === 'No' ? 'selected' : ''}>No</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Cleaning Method</label>
+          <select name="cleaningMethod" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;">
+            <option value="Dry" ${val('cleaningMethod', 'Dry') === 'Dry' ? 'selected' : ''}>Dry</option>
+            <option value="Wet" ${val('cleaningMethod') === 'Wet' ? 'selected' : ''}>Wet</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Allergen Check</label>
+          <select name="allergenCheck" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;">
+            <option value="Yes" ${val('allergenCheck', 'Yes') === 'Yes' ? 'selected' : ''}>Yes</option>
+            <option value="No" ${val('allergenCheck') === 'No' ? 'selected' : ''}>No</option>
+            <option value="NA" ${val('allergenCheck') === 'NA' ? 'selected' : ''}>NA</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Checked By</label>
+          <input type="text" name="checkedBy" value="${val('checkedBy', 'Vishal')}" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Previous Product</label>
+          <input type="text" name="previousProductName" value="${val('previousProductName')}" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Next Product</label>
+          <input type="text" name="nextProductName" value="${val('nextProductName')}" style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px;" />
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px;">Remarks</label>
+          <textarea name="remarks" rows="3" placeholder="Optional remarks..." style="width:100%; padding:8px 10px; border:1px solid #D1D5DB; border-radius:6px; font-size:13px; resize:vertical;">${val('remarks')}</textarea>
+        </div>
+        <div style="grid-column: span 2; display:flex; gap:12px; justify-content:flex-end; margin-top:4px;">
+          <button type="button" id="batchEditCancelBtn" style="
+            padding:9px 20px; border:1px solid #D1D5DB; background:#fff;
+            color:#374151; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer;
+          ">Cancel</button>
+          <button type="submit" style="
+            padding:9px 24px; border:none; background:#7C2D3E; color:#fff;
+            border-radius:7px; font-size:13px; font-weight:700; cursor:pointer;
+          ">💾 Save</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => modal.remove();
+
+  document.getElementById('batchEditModalClose').addEventListener('click', closeModal);
+  document.getElementById('batchEditCancelBtn').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.getElementById('batchEditForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const formData = {};
+    fd.forEach((v, k) => { formData[k] = v; });
+
+    // Coerce numeric fields
+    if (formData.plannedQty !== '') formData.plannedQty = parseFloat(formData.plannedQty);
+    if (formData.actualQty !== '') formData.actualQty = parseFloat(formData.actualQty);
+
+    // Carry over existing id if editing
+    if (batch && batch.id) formData.id = batch.id;
+
+    const saveBtn = e.target.querySelector('button[type="submit"]');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Saving...';
+
+    try {
+      await saveBatch(formData);
+      closeModal();
+      await refreshData();
+    } catch (err) {
+      alert('Save failed: ' + err.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Save';
     }
   });
 }

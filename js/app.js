@@ -928,7 +928,7 @@ function _buildAndPrint(batches, dateLabel) {
     + '<thead><tr>'
     + '<th>#</th><th>Process Date</th><th>Product Name</th><th>Batch No.</th>'
     + '<th>Main Ingredients</th><th>Machine</th><th>Ordered Qty</th><th>Actual Qty</th>'
-    + '<th>Shortage %</th><th>Cleaning</th><th>Clean Method</th><th>Allergen</th>'
+    + '<th>Shortage %</th><th>Cleaning</th><th>Method</th><th>Allergen</th>'
     + '<th>Checked By</th><th>Status</th>'
     + '</tr></thead>'
     + '<tbody>' + rows + '</tbody>'

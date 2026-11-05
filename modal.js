@@ -156,7 +156,7 @@ function renderModalContent() {
           <span class="summary-meta-val">📅 ${b.displayDate || formatDate(b.date)}</span>
         </div>
         <div class="summary-meta-item">
-          <span class="summary-meta-label">Planned Qty</span>
+          <span class="summary-meta-label">Ordered Qty</span>
           <span class="summary-meta-val">🥡 ${displayPlanned}</span>
         </div>
         <div class="summary-meta-item">
@@ -362,7 +362,7 @@ function renderOverviewTab(b) {
             </div>
           </div>
 
-          <!-- Middle Row: Packing Details & Yield & Quality -->
+          <!-- Middle Row: Packing Details & Remarks -->
           <div class="overview-mid-row">
             <!-- Packing Details Card -->
             <div class="modal-subcard flex-1">
@@ -392,38 +392,13 @@ function renderOverviewTab(b) {
               </div>
             </div>
 
-            <!-- Yield & Quality Card -->
+            <!-- Remarks Card (moved here from bottom) -->
             <div class="modal-subcard flex-1">
               <div class="subcard-header">
-                <span class="subcard-icon">🎯</span>
-                <h3 class="subcard-title">Yield & Quality</h3>
+                <span class="subcard-icon">💬</span>
+                <h3 class="subcard-title">Remarks</h3>
               </div>
-              <div class="yield-quality-split">
-                <div class="yq-col-metrics">
-                  <div class="yq-row"><span class="yq-label">Input Qty</span><span class="yq-colon">:</span><span class="yq-val font-mono">${formatQty(yq.inputQty || b.plannedQty, { decimals: 3 })}</span></div>
-                  <div class="yq-row"><span class="yq-label">Output Qty</span><span class="yq-colon">:</span><span class="yq-val font-mono">${isCompleted ? formatQty(yq.outputQty || b.actualQty, { decimals: 3 }) : '–'}</span></div>
-                  <div class="yq-row"><span class="yq-label">Process Loss</span><span class="yq-colon">:</span><span class="yq-val font-mono">${isCompleted ? formatQty(yq.processLoss || 0, { decimals: 3 }) : '–'}</span></div>
-                  <div class="yq-row"><span class="yq-label">Wastage/Rejection</span><span class="yq-colon">:</span><span class="yq-val font-mono">${formatQty(yq.wastage || 0, { decimals: 3 })}</span></div>
-                  <div class="yq-row"><span class="yq-label font-bold">Yield %</span><span class="yq-colon">:</span><span class="yq-val font-bold font-mono">${isCompleted ? formatPct(yq.yieldPct || b.yieldPct) : '–'}</span></div>
-                </div>
-                <div class="yq-col-badges">
-                  <div class="yq-badge-row">
-                    <span class="yq-label">Quality Check</span>
-                    <span class="yq-colon">:</span>
-                    <span class="status-pill ${yq.qualityCheck === 'Passed' ? 'badge-completed' : 'badge-pending'}">${yq.qualityCheck || 'Passed'}</span>
-                  </div>
-                  <div class="yq-badge-row">
-                    <span class="yq-label">Release Status</span>
-                    <span class="yq-colon">:</span>
-                    <span class="status-pill ${yq.releaseStatus === 'Released' ? 'badge-completed' : 'badge-pending'}">${yq.releaseStatus || 'Released'}</span>
-                  </div>
-                  <div class="yq-badge-row">
-                    <span class="yq-label">Reprocessing</span>
-                    <span class="yq-colon">:</span>
-                    <span class="status-pill badge-not-recorded">${yq.reprocessing || 'Not Applicable'}</span>
-                  </div>
-                </div>
-              </div>
+              <p class="remarks-text">${b.remarks || 'Batch manufactured as per approved recipe & process.'}</p>
             </div>
           </div>
 
@@ -443,43 +418,6 @@ function renderOverviewTab(b) {
         </div>
 
       </div>
-
-      <!-- Bottom Row: 2 Cards (Remarks | Verification) -->
-      <div class="overview-bottom-row">
-        
-        <!-- Card 1: Remarks -->
-        <div class="modal-subcard">
-          <div class="subcard-header">
-            <span class="subcard-icon">💬</span>
-            <h3 class="subcard-title">Remarks</h3>
-          </div>
-          <p class="remarks-text">${b.remarks || 'Batch manufactured as per approved recipe & process.'}</p>
-        </div>
-
-        <!-- Card 2: Verification -->
-        <div class="modal-subcard">
-          <div class="subcard-header">
-            <span class="subcard-icon">👥</span>
-            <h3 class="subcard-title">Verification</h3>
-          </div>
-          <div class="verification-grid">
-            <div class="ver-col">
-              <span class="ver-role">Prepared By</span>
-              <span class="ver-name">Vishal</span>
-              <span class="ver-sign">✔ Sign verified</span>
-            </div>
-            <div class="ver-col">
-              <span class="ver-role">Checked By</span>
-              <span class="ver-name">Vishal</span>
-              <span class="ver-sign">✔ Sign verified</span>
-            </div>
-            <div class="ver-col">
-              <span class="ver-role">Approved By</span>
-              <span class="ver-name">Vishal</span>
-              <span class="ver-sign">✔ Sign verified</span>
-            </div>
-          </div>
-        </div>
 
       </div>
     </div>

@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manufacturing & Processing Records | LV Spices</title>
   <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      .sidebar, .btn-today-pill, #btnPrevDay, #btnNextDay, .btn-export-outline,
+      .btn-dropdown-select, .dropdown-container, #btnNewBatch,
+      .table-controls-bar .controls-right { display: none !important; }
+      .main-content { margin-left: 0 !important; padding: 0 !important; }
+      .master-table { font-size: 10px !important; }
+      .master-table th, .master-table td { padding: 4px 5px !important; }
+    }
+  </style>
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
   <!-- SheetJS CDN for Excel Export -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>

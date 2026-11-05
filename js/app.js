@@ -373,7 +373,7 @@ function renderMasterTable() {
     let shortageDisplay = '–';
     if (b.actualQty != null && b.plannedQty > 0) {
       const diff = Math.round(((b.actualQty - b.plannedQty) / b.plannedQty) * 100 * 100) / 100;
-      shortageDisplay = (diff >= 0 ? '+' : '') + diff + '%';
+      shortageDisplay = diff + '%';
     }
     // Random but stable Vishal/Tejas based on batchNo hash
     const batchHash = (b.batchNo || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -397,7 +397,7 @@ function renderMasterTable() {
         <td class="text-center" style="font-size:12px; font-weight:600;">${b.machineName || 'Blender'}</td>
         <td class="text-right font-mono">${plannedDisplay}</td>
         <td class="text-right font-mono">${actualDisplay}</td>
-        <td class="text-right font-mono" style="color:${shortageDisplay.startsWith('+') ? '#16a34a' : shortageDisplay === '–' ? '#6b7280' : '#dc2626'};">${shortageDisplay}</td>
+        <td class="text-right font-mono" style="color:${shortageDisplay === '–' ? '#6b7280' : '#16a34a'};">${shortageDisplay}</td>
         <td class="text-center">
           <span class="status-pill ${cleaningClass}">${cleaningDisplay}</span>
         </td>

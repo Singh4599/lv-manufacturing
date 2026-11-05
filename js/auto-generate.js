@@ -20592,13 +20592,14 @@ export const DEFAULT_WEEKLY_SCHEDULE = {
 };
 
 // ── REALISTIC PRODUCTION SCHEDULING ──────────────────────────────────────────
-// SEASONING pool: Only products from 365 Spicery Pricelist (Seasoning + Jain Seasoning sheets)
-// Normalise names for fuzzy match (lowercase, trim)
-function _normName(n) { return (n || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
-const _EXCEL_SEASONING_SET = new Set(SEASONING_PRODUCT_LIST.map(_normName));
-const SEASONING_POOL = PRODUCTS.filter(p => _EXCEL_SEASONING_SET.has(_normName(p.name)));
-// BLENDED pool: products NOT in seasoning list (fallback, kept empty for now)
-const BLENDED_POOL = [];
+// SEASONING pool: Everything except Blended Spices (Chilli Powder, Single Spices, Chutney, Salt, Whole Spices, Jain products)
+const SEASONING_POOL = PRODUCTS.filter(p =>
+  !['Blended Spices', 'Jain Blended Spices'].includes(p.category)
+);
+// BLENDED pool: Blended Spices + Jain Blended (kept for reference but not used in scheduling)
+const BLENDED_POOL = PRODUCTS.filter(p =>
+  ['Blended Spices', 'Jain Blended Spices'].includes(p.category)
+);
 
 // Keep old aliases for backward compat (not used for scheduling anymore)
 const SEASONING_PRODUCTS = SEASONING_POOL;

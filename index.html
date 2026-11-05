@@ -9,14 +9,29 @@
     @media print {
       @page { size: A4 landscape; margin: 8mm; }
       body > *, .sidebar, .top-bar { display: none !important; }
-      #printAllTable { display: block !important; }
-      #printAllTable table { width: 100%; border-collapse: collapse; font-size: 9px; font-family: Arial, sans-serif; }
-      #printAllTable th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; padding: 5px 4px; font-weight: 700; border: 1px solid #cbd5e1; text-align: left; }
-      #printAllTable td { padding: 4px 4px; border: 1px solid #e2e8f0; }
-      #printAllTable .print-header { font-size: 13px; font-weight: 800; margin-bottom: 6px; }
-      #printAllTable .print-meta { font-size: 10px; color: #64748b; margin-bottom: 8px; }
+      #printAllTable { display: block !important; position: fixed; top: 0; left: 0; width: 100%; }
+      #printAllTable table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: Arial, sans-serif; table-layout: fixed; }
+      #printAllTable th { background: #1e293b !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 8px 6px; font-weight: 700; border: 1px solid #334155; text-align: left; font-size: 10px; }
+      #printAllTable td { padding: 7px 6px; border: 1px solid #cbd5e1; font-size: 11px; vertical-align: middle; }
+      #printAllTable tbody tr:nth-child(even) { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #printAllTable .print-header { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
+      #printAllTable .print-meta { font-size: 11px; color: #64748b; margin-bottom: 10px; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
     }
     #printAllTable { display: none; }
+    /* Print Dialog Modal */
+    #printDialogOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
+    #printDialogOverlay.active { display:flex; }
+    #printDialogBox { background:#fff; border-radius:16px; padding:28px 32px; width:400px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+    #printDialogBox h3 { margin:0 0 6px; font-size:18px; color:#1e293b; }
+    #printDialogBox p { margin:0 0 20px; font-size:13px; color:#64748b; }
+    .print-dialog-row { display:flex; gap:12px; margin-bottom:16px; }
+    .print-dialog-row label { font-size:12px; font-weight:600; color:#374151; margin-bottom:4px; display:block; }
+    .print-dialog-row input[type=date] { width:100%; padding:9px 10px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; }
+    .print-dialog-row input[type=date]:focus { outline:none; border-color:#7c3aed; }
+    .print-dialog-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+    .btn-print-cancel { padding:9px 20px; border:1.5px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-size:14px; cursor:pointer; font-weight:600; }
+    .btn-print-go { padding:9px 24px; border:none; border-radius:8px; background:#7c3aed; color:#fff; font-size:14px; cursor:pointer; font-weight:700; }
+    .btn-print-go:hover { background:#6d28d9; }
   </style>
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
   <!-- SheetJS CDN for Excel Export -->
@@ -228,6 +243,27 @@
 
   <!-- Main ES Module Script -->
   <script type="module" src="./js/app.js"></script>
+  <!-- Print Date Range Dialog -->
+  <div id="printDialogOverlay">
+    <div id="printDialogBox">
+      <h3>🖨 Print Records</h3>
+      <p>Select the date range you want to print</p>
+      <div class="print-dialog-row">
+        <div style="flex:1">
+          <label>From Date</label>
+          <input type="date" id="printDateFrom" />
+        </div>
+        <div style="flex:1">
+          <label>To Date</label>
+          <input type="date" id="printDateTo" />
+        </div>
+      </div>
+      <div class="print-dialog-actions">
+        <button class="btn-print-cancel" onclick="closePrintDialog()">Cancel</button>
+        <button class="btn-print-go" onclick="doPrintRecords()">🖨 Print</button>
+      </div>
+    </div>
+  </div>
   <div id="printAllTable"></div>
 </body>
 </html>

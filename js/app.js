@@ -824,10 +824,38 @@ function openEditModal(batch) {
 
 // ── Print All Records ──────────────────────────────────────────────────────
 window.printAllRecords = function () {
-  const batches = state.filteredBatches || [];
-  const dateLabel = state.dateFrom && state.dateTo
-    ? (state.dateFrom === state.dateTo ? state.dateFrom : state.dateFrom + ' to ' + state.dateTo)
-    : 'All Dates';
+  // Set default dates to current filter range
+  const today = state.dateFrom || new Date().toISOString().slice(0, 10);
+  document.getElementById('printDateFrom').value = state.dateFrom || today;
+  document.getElementById('printDateTo').value = state.dateTo || today;
+  document.getElementById('printDialogOverlay').classList.add('active');
+};
+
+window.closePrintDialog = function () {
+  document.getElementById('printDialogOverlay').classList.remove('active');
+};
+
+window.doPrintRecords = function () {
+  const fromVal = document.getElementById('printDateFrom').value;
+  const toVal = document.getElementById('printDateTo').value;
+  if (!fromVal || !toVal) { alert('Please select both dates.'); return; }
+  closePrintDialog();
+
+  const dateLabel = fromVal === toVal ? fromVal : fromVal + ' to ' + toVal;
+
+  // Always fetch from Firestore so any date range works
+  fetchBatches(fromVal, toVal).then(function (batches) {
+    if (!batches || batches.length === 0) {
+      alert('No records found for the selected date range.');
+      return;
+    }
+    _buildAndPrint(batches, dateLabel);
+  }).catch(function (err) {
+    alert('Error fetching records: ' + err.message);
+  });
+};
+
+function _buildAndPrint(batches, dateLabel) {
 
   const rows = batches.map(function (b, idx) {
     const bHash = (b.batchNo || '').split('').reduce(function (acc, c) { return acc + c.charCodeAt(0); }, 0);
@@ -839,21 +867,22 @@ window.printAllRecords = function () {
     const ingredientsStr = Array.isArray(b.ingredients) && b.ingredients.length > 0
       ? b.ingredients.slice(0, 3).map(function (i) { return i.name || i; }).join(', ')
       : '–';
-    return '<tr>'
-      + '<td>' + (idx + 1) + '</td>'
-      + '<td>' + (b.displayDate || b.date || '–') + '</td>'
-      + '<td>' + (b.productName || '–') + '</td>'
-      + '<td>' + (b.batchNo || '–') + '</td>'
-      + '<td>' + ingredientsStr + '</td>'
-      + '<td>' + (b.machineName || 'Blender') + '</td>'
-      + '<td>' + (b.plannedQty != null ? b.plannedQty.toFixed(2) + ' kg' : '–') + '</td>'
-      + '<td>' + (b.actualQty != null ? b.actualQty.toFixed(2) + ' kg' : '–') + '</td>'
-      + '<td>' + shortageStr + '</td>'
-      + '<td>' + (b.cleaningStatus || (b.status === 'Completed' ? 'Cleaned' : 'Pending')) + '</td>'
-      + '<td>' + (b.cleaningMethod || 'Dry') + '</td>'
-      + '<td>' + (b.allergenCheck || 'Yes') + '</td>'
-      + '<td>' + checkedBy + '</td>'
-      + '<td>' + (b.status || 'Pending') + '</td>'
+    const rowStyle = idx % 2 === 1 ? ' style="background:#f8fafc;"' : '';
+    return '<tr' + rowStyle + '>'
+      + '<td style="text-align:center;font-weight:700;">' + (idx + 1) + '</td>'
+      + '<td style="font-weight:600;">' + (b.displayDate || b.date || '–') + '</td>'
+      + '<td style="font-weight:700;">' + (b.productName || '–') + '</td>'
+      + '<td style="font-weight:600;color:#7c3aed;">' + (b.batchNo || '–') + '</td>'
+      + '<td style="color:#6b7280;">' + ingredientsStr + '</td>'
+      + '<td style="text-align:center;">' + (b.machineName || 'Blender') + '</td>'
+      + '<td style="text-align:right;font-weight:600;">' + (b.plannedQty != null ? b.plannedQty.toFixed(2) + ' kg' : '–') + '</td>'
+      + '<td style="text-align:right;font-weight:600;">' + (b.actualQty != null ? b.actualQty.toFixed(2) + ' kg' : '–') + '</td>'
+      + '<td style="text-align:center;font-weight:700;color:' + (shortageVal != null && shortageVal > 0 ? '#16a34a' : '#374151') + ';">' + shortageStr + '</td>'
+      + '<td style="text-align:center;">' + (b.cleaningStatus || (b.status === 'Completed' ? 'Cleaned' : 'Pending')) + '</td>'
+      + '<td style="text-align:center;">' + (b.cleaningMethod || 'Dry') + '</td>'
+      + '<td style="text-align:center;font-weight:700;color:#16a34a;">' + (b.allergenCheck || 'Yes') + '</td>'
+      + '<td style="text-align:center;font-weight:600;">' + checkedBy + '</td>'
+      + '<td style="text-align:center;font-weight:700;color:' + (b.status === 'Completed' ? '#16a34a' : '#f59e0b') + ';">' + (b.status || 'Pending') + '</td>'
       + '</tr>';
   }).join('');
 
@@ -861,6 +890,12 @@ window.printAllRecords = function () {
     '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
     + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + ' &nbsp;|&nbsp; Printed: ' + new Date().toLocaleString('en-IN') + '</div>'
     + '<table>'
+    + '<colgroup>'
+    + '<col style="width:3%"><col style="width:9%"><col style="width:14%"><col style="width:9%">'
+    + '<col style="width:16%"><col style="width:7%"><col style="width:8%"><col style="width:8%">'
+    + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:5%">'
+    + '<col style="width:7%"><col style="width:8%">'
+    + '</colgroup>'
     + '<thead><tr>'
     + '<th>#</th><th>Process Date</th><th>Product Name</th><th>Batch No.</th>'
     + '<th>Main Ingredients</th><th>Machine</th><th>Ordered Qty</th><th>Actual Qty</th>'
@@ -871,4 +906,4 @@ window.printAllRecords = function () {
     + '</table>';
 
   window.print();
-};
+}

@@ -387,10 +387,9 @@ function renderMasterTable() {
         <td>${b.displayDate || formatDate(b.date)}</td>
         <td><strong>${b.productName || '–'}</strong></td>
         <td class="font-mono font-bold text-main">${b.batchNo || '–'}</td>
-        <td style="font-size:11px; color:#6b7280;">${(() => {
+        <td style="font-size:11px; color:#6b7280; white-space:normal; word-break:break-word; max-width:180px;">${(() => {
           if (Array.isArray(b.ingredients) && b.ingredients.length > 0) {
-            const names = b.ingredients.slice(0, 3).map(ing => ing.name || ing).join(', ');
-            return b.ingredients.length > 3 ? names + ' ...' : names;
+            return b.ingredients.slice(0, 3).map(ing => ing.name || ing).join(', ') + (b.ingredients.length > 3 ? ' …' : '');
           }
           return '–';
         })()}</td>
@@ -843,14 +842,20 @@ window.doPrintRecords = function () {
 
   const dateLabel = fromVal === toVal ? fromVal : fromVal + ' to ' + toVal;
 
+  // Show loading on button
+  const goBtn = document.getElementById('btnPrintGo');
+  if (goBtn) { goBtn.disabled = true; goBtn.textContent = '⏳ Loading...'; }
+
   // Always fetch from Firestore so any date range works
   fetchBatches(fromVal, toVal).then(function (batches) {
+    if (goBtn) { goBtn.disabled = false; goBtn.innerHTML = '🖨 Print'; }
     if (!batches || batches.length === 0) {
-      alert('No records found for the selected date range.');
+      alert('No records found for ' + fromVal + ' to ' + toVal + '. Check date range.');
       return;
     }
     _buildAndPrint(batches, dateLabel);
   }).catch(function (err) {
+    if (goBtn) { goBtn.disabled = false; goBtn.innerHTML = '🖨 Print'; }
     alert('Error fetching records: ' + err.message);
   });
 };
@@ -865,7 +870,7 @@ function _buildAndPrint(batches, dateLabel) {
       : null;
     const shortageStr = shortageVal != null ? shortageVal + '%' : '–';
     const ingredientsStr = Array.isArray(b.ingredients) && b.ingredients.length > 0
-      ? b.ingredients.slice(0, 3).map(function (i) { return i.name || i; }).join(', ')
+      ? b.ingredients.map(function (i) { return i.name || i; }).join(', ')
       : '–';
     const rowStyle = idx % 2 === 1 ? ' style="background:#f8fafc;"' : '';
     return '<tr' + rowStyle + '>'
@@ -886,15 +891,26 @@ function _buildAndPrint(batches, dateLabel) {
       + '</tr>';
   }).join('');
 
+  // Add blank rows to fill page if fewer than MIN_ROWS
+  const MIN_ROWS = 25;
+  var blankRows = '';
+  if (batches.length < MIN_ROWS) {
+    var blanksNeeded = MIN_ROWS - batches.length;
+    for (var bi = 0; bi < blanksNeeded; bi++) {
+      blankRows += '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    }
+  }
+
   document.getElementById('printAllTable').innerHTML =
     '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
+    + '<div class="print-subheader">Unit: LV Manufacturing &nbsp;|&nbsp; Location: Nashik</div>'
     + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + ' &nbsp;|&nbsp; Printed: ' + new Date().toLocaleString('en-IN') + '</div>'
     + '<table>'
     + '<colgroup>'
-    + '<col style="width:3%"><col style="width:9%"><col style="width:14%"><col style="width:9%">'
-    + '<col style="width:16%"><col style="width:7%"><col style="width:8%"><col style="width:8%">'
-    + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:5%">'
-    + '<col style="width:7%"><col style="width:8%">'
+    + '<col style="width:3%"><col style="width:8%"><col style="width:13%"><col style="width:8%">'
+    + '<col style="width:19%"><col style="width:6%"><col style="width:7%"><col style="width:7%">'
+    + '<col style="width:6%"><col style="width:6%"><col style="width:6%"><col style="width:5%">'
+    + '<col style="width:7%"><col style="width:9%">'
     + '</colgroup>'
     + '<thead><tr>'
     + '<th>#</th><th>Process Date</th><th>Product Name</th><th>Batch No.</th>'
@@ -902,7 +918,7 @@ function _buildAndPrint(batches, dateLabel) {
     + '<th>Shortage %</th><th>Cleaning</th><th>Clean Method</th><th>Allergen</th>'
     + '<th>Checked By</th><th>Status</th>'
     + '</tr></thead>'
-    + '<tbody>' + rows + '</tbody>'
+    + '<tbody>' + rows + blankRows + '</tbody>'
     + '</table>';
 
   window.print();

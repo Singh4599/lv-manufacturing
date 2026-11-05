@@ -226,8 +226,8 @@ async function refreshData() {
 
     // Compute previousProductName / nextProductName from actual Firebase order
     batches.forEach((batch, idx) => {
-      batch.previousProductName = idx > 0 ? batches[idx - 1].productName : '–';
-      batch.nextProductName = idx < batches.length - 1 ? batches[idx + 1].productName : '–';
+      batch.previousProductName = idx < batches.length - 1 ? batches[idx + 1].productName : '–';
+      batch.nextProductName = idx > 0 ? batches[idx - 1].productName : '–';
     });
 
     state.allBatches = batches;

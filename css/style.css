@@ -56,7 +56,7 @@ html, body {
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body.modal-open {
@@ -225,9 +225,12 @@ input, select {
 .main-wrapper {
   margin-left: var(--sidebar-width);
   flex: 1;
-  padding: 24px 36px 48px 36px;
+  padding: 24px 36px 16px 36px;
   background-color: var(--bg-canvas);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --------------------------------------------------------------------------
@@ -581,13 +584,19 @@ input, select {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
 }
 
 .master-table {
@@ -1487,6 +1496,22 @@ input, select {
     background: #FFFFFF !important;
     color: #000000 !important;
     font-size: 10px !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .main-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .table-card {
+    flex: none !important;
+    overflow: visible !important;
+  }
+
+  .table-responsive {
+    overflow: visible !important;
   }
 
   /* Hide everything except the modal */

@@ -634,6 +634,7 @@ input, select {
   white-space: nowrap;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .master-table tbody td {

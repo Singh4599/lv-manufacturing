@@ -61,6 +61,9 @@
 
         <!-- Action Buttons -->
         <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; align-items: center;">
+          <button class="btn-primary-burgundy" id="btnResetRegenerate" style="font-size: 13.5px; padding: 10px 20px; background:#b45309; border-color:#92400e; display:flex; align-items:center; gap:6px;">
+            ♻️ Reset &amp; Regenerate (Clear All → Backfill)
+          </button>
           <button class="btn-primary-burgundy" id="btnBackfillHistorical" style="font-size: 13.5px; padding: 10px 18px;">
             📅 Backfill Historical (Apr 2026 → Today)
           </button>
@@ -141,6 +144,7 @@
     const btnClearAll = document.getElementById('btnClearAll');
     const btnCustomRun = document.getElementById('btnCustomRun');
     const btnClearConsole = document.getElementById('btnClearConsole');
+    const btnResetRegenerate = document.getElementById('btnResetRegenerate');
 
     let isRunning = false;
 
@@ -161,12 +165,14 @@
       btnGenerateFuture.disabled = disabled;
       btnClearAll.disabled = disabled;
       btnCustomRun.disabled = disabled;
+      if (btnResetRegenerate) btnResetRegenerate.disabled = disabled;
 
       const opacity = disabled ? '0.5' : '1';
       btnBackfillHistorical.style.opacity = opacity;
       btnGenerateFuture.style.opacity = opacity;
       btnClearAll.style.opacity = opacity;
       btnCustomRun.style.opacity = opacity;
+      if (btnResetRegenerate) btnResetRegenerate.style.opacity = opacity;
     }
 
     /**
@@ -330,6 +336,104 @@
       const endDate = document.getElementById('backfillEndDate').value;
       await runGeneration(startDate, endDate, 'Custom Range Records');
     });
+
+    // ♻️ Reset & Regenerate — Clear ALL then Backfill Apr 2026 → Today
+    if (btnResetRegenerate) {
+      btnResetRegenerate.addEventListener('click', async () => {
+        if (isRunning) return;
+        const confirmed = confirm('⚠️ RESET & REGENERATE\n\nThis will:\n1. DELETE all existing manufacturing records\n2. Re-generate all records from Apr 2026 → Today\n\nThis cannot be undone. Continue?');
+        if (!confirmed) return;
+
+        setButtonsDisabled(true);
+        progressWrap.classList.remove('hidden');
+        consoleEl.innerHTML = '[RESET & REGENERATE] Starting full reset...';
+
+        try {
+          // Step 1: Clear all
+          progressBarFill.style.width = '5%';
+          progressPctText.textContent = '...';
+          progressStatusText.textContent = 'Step 1/2 — Clearing all existing records from Firestore...';
+          log('Step 1/2 — Deleting all existing records from Firestore...');
+
+          const clearResult = await clearAllBatches((deleted, total, currentChunk, totalChunks) => {
+            const pct = Math.round((deleted / (total || 1)) * 40); // 0–40% for clearing
+            progressBarFill.style.width = `${5 + pct}%`;
+            progressPctText.textContent = `${5 + pct}%`;
+            progressStatusText.textContent = `Clearing: chunk ${currentChunk}/${totalChunks} — ${deleted}/${total} records deleted`;
+            log(`Cleared chunk ${currentChunk}/${totalChunks} (${deleted}/${total} records deleted).`);
+          });
+
+          log(`✔ Cleared ${clearResult.deleted} records. Starting regeneration...`, 'success');
+
+          // Step 2: Backfill Apr 2026 → Today
+          progressBarFill.style.width = '45%';
+          progressStatusText.textContent = 'Step 2/2 — Generating records (Apr 2026 → Today)...';
+          log('Step 2/2 — Generating all records from Apr 2026 → Today...');
+
+          const startDate = '2026-04-01';
+          const endDate = formatDateISO(new Date());
+
+          const start = new Date(startDate + 'T00:00:00');
+          const end = new Date(endDate + 'T00:00:00');
+          const cur = new Date(start);
+          const batchesToSave = [];
+          const seenInRun = new Set();
+          let totalDays = Math.round((end - start) / 86400000) + 1;
+          let dayCounter = 0;
+          let skippedSundays = 0;
+
+          while (cur <= end) {
+            const dateStr = formatDateISO(cur);
+            dayCounter++;
+            if (cur.getDay() === 0) {
+              skippedSundays++;
+            } else {
+              const dayBatches = generateDayBatches(dateStr);
+              dayBatches.forEach((batch) => {
+                if (!seenInRun.has(batch.batchNo)) {
+                  batchesToSave.push(batch);
+                  seenInRun.add(batch.batchNo);
+                }
+              });
+            }
+
+            const scanPct = Math.round((dayCounter / totalDays) * 20);
+            progressBarFill.style.width = `${45 + scanPct}%`;
+            progressStatusText.textContent = `Scanning: day ${dayCounter}/${totalDays} — ${batchesToSave.length} batches ready`;
+
+            cur.setDate(cur.getDate() + 1);
+          }
+
+          log(`Scan complete: ${batchesToSave.length} batches to save (${skippedSundays} Sundays skipped).`);
+          progressBarFill.style.width = '65%';
+          progressStatusText.textContent = `Saving ${batchesToSave.length} records to Firestore...`;
+
+          const CHUNK_SIZE = 400;
+          const totalChunks = Math.ceil(batchesToSave.length / CHUNK_SIZE);
+          const saveResult = await batchSave(batchesToSave, (savedCount, totalCount) => {
+            const currentChunk = Math.ceil(savedCount / CHUNK_SIZE);
+            const pct = Math.round((savedCount / totalCount) * 35); // 65–100%
+            progressBarFill.style.width = `${65 + pct}%`;
+            progressPctText.textContent = `${65 + pct}%`;
+            progressStatusText.textContent = `Saving chunk ${currentChunk}/${totalChunks} — ${savedCount}/${totalCount} records`;
+            log(`Saved chunk ${currentChunk}/${totalChunks} (${savedCount}/${totalCount} records committed).`);
+          });
+
+          progressBarFill.style.width = '100%';
+          progressPctText.textContent = '100%';
+          progressStatusText.textContent = `✅ Done! ${saveResult.saved} records regenerated successfully.`;
+          log(`✅ Reset & Regenerate complete! ${saveResult.saved} records saved to Firestore.`, 'success');
+          alert(`✅ Done!\n\n${clearResult.deleted} old records cleared.\n${saveResult.saved} fresh records generated.`);
+
+        } catch (err) {
+          log(`Error: ${err.message}`, 'error');
+          console.error(err);
+          alert(`Error during Reset & Regenerate: ${err.message}`);
+        } finally {
+          setButtonsDisabled(false);
+        }
+      });
+    }
   </script>
 </body>
 </html>

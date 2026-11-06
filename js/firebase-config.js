@@ -109,8 +109,8 @@ export async function fetchBatches(dateFrom = null, dateTo = null, search = null
   if (isFirestoreAvailable && db) {
     try {
       const coll = collection(db, 'manufacturingBatches');
-      // Always use date range filter — NEVER fetch entire collection
-      let q = query(coll, where('date', '>=', dateFrom), where('date', '<=', dateTo), orderBy('date', 'desc'), orderBy('batchNo', 'desc'));
+      // Simple query — only filter by date, sort in memory (no composite index needed)
+      let q = query(coll, where('date', '>=', dateFrom), where('date', '<=', dateTo), orderBy('date', 'desc'));
 
       const snap = await getDocs(q);
       snap.forEach((d) => {

@@ -846,10 +846,17 @@ function openEditModal(batch) {
 
 // ── Print All Records ──────────────────────────────────────────────────────
 window.printAllRecords = function () {
-  // Set default dates to current filter range
-  const today = state.dateFrom || new Date().toISOString().slice(0, 10);
-  document.getElementById('printDateFrom').value = state.dateFrom || today;
-  document.getElementById('printDateTo').value = state.dateTo || today;
+  // Set default dates to current filter range — capped at today
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const fromVal = (state.dateFrom && state.dateFrom <= todayStr) ? state.dateFrom : todayStr;
+  const toVal   = (state.dateTo   && state.dateTo   <= todayStr) ? state.dateTo   : todayStr;
+
+  const fromEl = document.getElementById('printDateFrom');
+  const toEl   = document.getElementById('printDateTo');
+  fromEl.value = fromVal;
+  fromEl.max   = todayStr;  // cannot select future
+  toEl.value   = toVal;
+  toEl.max     = todayStr;  // cannot select future
   document.getElementById('printDialogOverlay').classList.add('active');
 };
 

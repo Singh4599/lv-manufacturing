@@ -45,9 +45,20 @@ try {
   console.warn('Firebase initialization error, will use local storage fallback:', err);
 }
 
-const LOCAL_STORAGE_BATCHES_KEY = 'lv_spices_batches_v2';
+const LOCAL_STORAGE_BATCHES_KEY = 'lv_spices_batches_v3';
 const LOCAL_STORAGE_PRODUCTS_KEY = 'lv_spices_products_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'lv_spices_settings_v2';
+
+// Clear old cache versions on load
+try {
+  localStorage.removeItem('lv_spices_batches_v2');
+  localStorage.removeItem('lv_spices_batches_v1');
+} catch(e) {}
+
+/** Returns today's date as YYYY-MM-DD (real system date) */
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 // In-memory cache
 let localBatchesMemory = [];
@@ -81,6 +92,11 @@ function syncLocalCache() {
  */
 export async function fetchBatches(dateFrom = null, dateTo = null, search = null, status = null) {
   let batches = [];
+
+  // ⚠️ NEVER show future data — cap dateTo at today
+  const today = getTodayStr();
+  if (!dateTo || dateTo > today) dateTo = today;
+  if (dateFrom && dateFrom > today) return []; // future-only range → empty
 
   if (isFirestoreAvailable && db) {
     try {

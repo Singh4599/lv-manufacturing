@@ -372,9 +372,11 @@ function renderMasterTable() {
     return;
   }
 
-  // Calculate slice for current page
-  const startIndex = (state.currentPage - 1) * state.pageSize;
-  const pageItems = state.filteredBatches.slice(startIndex, startIndex + state.pageSize);
+  // Single-day view: show ALL records on one page (no pagination needed)
+  const isSingleDay = state.dateFrom === state.dateTo;
+  const effectivePageSize = isSingleDay ? state.filteredBatches.length : state.pageSize;
+  const startIndex = isSingleDay ? 0 : (state.currentPage - 1) * state.pageSize;
+  const pageItems = state.filteredBatches.slice(startIndex, startIndex + effectivePageSize);
 
   const rowsHtml = pageItems.map((b, idx) => {
     const srNo = startIndex + idx + 1;
@@ -503,6 +505,14 @@ function renderPagination() {
   const total = state.filteredBatches.length;
   if (!total) {
     if (infoText) infoText.textContent = 'Showing 0 of 0 batches';
+    if (container) container.innerHTML = '';
+    return;
+  }
+
+  // Single day: show all, hide pagination
+  const isSingleDay = state.dateFrom === state.dateTo;
+  if (isSingleDay) {
+    if (infoText) infoText.textContent = `Showing all ${formatNumber(total)} batches`;
     if (container) container.innerHTML = '';
     return;
   }

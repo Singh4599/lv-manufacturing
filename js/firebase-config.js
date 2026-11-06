@@ -24,12 +24,12 @@ import {
 import { formatDateISO } from './calculations.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDtzCXonT008wlOb4Lk5cSkAhAiJHvlanE",
-  authDomain: "process-b5150.firebaseapp.com",
-  projectId: "process-b5150",
-  storageBucket: "process-b5150.firebasestorage.app",
-  messagingSenderId: "1072136844370",
-  appId: "1:1072136844370:web:8f2b2ec83a68179f8d9b8b"
+  apiKey: "AIzaSyA2OUuv9d1pbtQH4o0pkj6yQQU9y9VHHBU",
+  authDomain: "manufacturing-8d870.firebaseapp.com",
+  projectId: "manufacturing-8d870",
+  storageBucket: "manufacturing-8d870.firebasestorage.app",
+  messagingSenderId: "892188559393",
+  appId: "1:892188559393:web:d2d820985fcc88e004bb60"
 };
 
 // Initialize Firebase App & Firestore
@@ -45,12 +45,13 @@ try {
   console.warn('Firebase initialization error, will use local storage fallback:', err);
 }
 
-const LOCAL_STORAGE_BATCHES_KEY = 'lv_spices_batches_v3';
+const LOCAL_STORAGE_BATCHES_KEY = 'lv_spices_batches_v4';
 const LOCAL_STORAGE_PRODUCTS_KEY = 'lv_spices_products_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'lv_spices_settings_v2';
 
 // Clear old cache versions on load
 try {
+  localStorage.removeItem('lv_spices_batches_v3');
   localStorage.removeItem('lv_spices_batches_v2');
   localStorage.removeItem('lv_spices_batches_v1');
 } catch(e) {}

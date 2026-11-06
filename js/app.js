@@ -91,12 +91,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set default date range button text
   updateDateRangeButtonText();
 
-  // Run today check & batch auto-generation
-  try {
-    await checkAndGenerateToday({ fetchBatches, batchSave });
-  } catch (err) {
-    console.warn('Auto-generation check warning:', err);
-  }
+  // Auto-generation disabled — data managed via upload script
+  // await checkAndGenerateToday({ fetchBatches, batchSave });
 
   // Initial load
   await refreshData();

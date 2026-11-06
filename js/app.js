@@ -923,7 +923,6 @@ function _buildAndPrint(batches, dateLabel) {
 
   document.getElementById('printAllTable').innerHTML =
     '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
-    + '<div class="print-subheader">Unit: 12</div>'
     + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + '</div>'
     + '<table>'
     + '<colgroup>'

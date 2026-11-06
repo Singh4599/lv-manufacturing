@@ -5,8 +5,6 @@
 
 import {
   fetchBatches,
-  getStats,
-  subscribeToStats,
   batchSave,
   saveBatch,
   clearAllBatches
@@ -102,12 +100,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial load
   await refreshData();
-
-  // Subscribe to real-time stats
-  subscribeToStats((newStats) => {
-    state.stats = newStats;
-    renderSummaryCards();
-  });
 });
 
 /**
@@ -291,10 +283,6 @@ async function refreshData() {
 
     state.allBatches = batches;
 
-    // Fetch stats
-    const stats = await getStats();
-    state.stats = stats;
-
     applyFiltersAndRender();
     renderSummaryCards();
   } catch (err) {
@@ -331,28 +319,35 @@ function applyFiltersAndRender() {
  * Render the 4 Summary Cards (Ref Image 1 Match)
  */
 function renderSummaryCards() {
-  // 1. Total Batches (pink bg)
-  const elTotal = document.getElementById('statTotalBatches');
-  if (elTotal) {
-    elTotal.textContent = formatNumber(state.stats.totalBatches);
-  }
+  const batches = state.allBatches || [];
 
-  // 2. Today's Production (green bg)
+  // 1. Total Batches
+  const elTotal = document.getElementById('statTotalBatches');
+  if (elTotal) elTotal.textContent = formatNumber(batches.length);
+
+  // 2. Total Actual Qty
   const elToday = document.getElementById('statTodayProd');
   if (elToday) {
-    elToday.textContent = formatNumber(state.stats.todayProduction);
+    const totalQty = batches.reduce((sum, b) => sum + (Number(b.actualQty) || Number(b.plannedQty) || 1), 0);
+    elToday.textContent = `${formatNumber(Math.round(totalQty * 100) / 100)} kg`;
   }
 
-  // 3. Total Finished Qty in kg (orange bg)
+  // 3. Completed count
   const elQty = document.getElementById('statFinishedQty');
   if (elQty) {
-    elQty.textContent = `${formatNumber(Math.round(state.stats.totalFinishedQtyKg))} kg`;
+    const completed = batches.filter(b => b.status === 'Completed').length;
+    elQty.textContent = formatNumber(completed);
   }
 
-  // 4. Pending Records (purple bg)
+  // 4. Allergen Yes count
   const elPending = document.getElementById('statPendingRecords');
   if (elPending) {
-    elPending.textContent = formatNumber(state.stats.pendingRecords);
+    const allergenCount = batches.filter(b => {
+      const ing = b.ingredients || [];
+      const str = Array.isArray(ing) ? ing.map(i => i.name || i).join(' ') : String(ing);
+      return /sesame|mustard|peanut|cashew|almond|pistachio|walnut|milk powder|cheese powder|butter powder|cream powder|soya|soybean/i.test(str);
+    }).length;
+    elPending.textContent = formatNumber(allergenCount);
   }
 }
 

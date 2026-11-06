@@ -98,17 +98,18 @@ export async function fetchBatches(dateFrom = null, dateTo = null, search = null
   if (!dateTo || dateTo > today) dateTo = today;
   if (dateFrom && dateFrom > today) return []; // future-only range → empty
 
+  // Always ensure dateFrom is set — if not provided, default to 30 days ago (safe window)
+  if (!dateFrom) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - 30);
+    dateFrom = d.toISOString().slice(0, 10);
+  }
+
   if (isFirestoreAvailable && db) {
     try {
       const coll = collection(db, 'manufacturingBatches');
-      let q = query(coll, orderBy('date', 'desc'), orderBy('batchNo', 'desc'));
-
-      // If date range is specified
-      if (dateFrom && dateTo) {
-        q = query(coll, where('date', '>=', dateFrom), where('date', '<=', dateTo), orderBy('date', 'desc'), orderBy('batchNo', 'desc'));
-      } else if (dateFrom) {
-        q = query(coll, where('date', '>=', dateFrom), orderBy('date', 'desc'), orderBy('batchNo', 'desc'));
-      }
+      // Always use date range filter — NEVER fetch entire collection
+      let q = query(coll, where('date', '>=', dateFrom), where('date', '<=', dateTo), orderBy('date', 'desc'), orderBy('batchNo', 'desc'));
 
       const snap = await getDocs(q);
       snap.forEach((d) => {

@@ -885,6 +885,13 @@ window.doPrintRecords = function () {
 
 function _buildAndPrint(batches, dateLabel) {
 
+  // Sort oldest → newest for print (ascending by date, then batchNo)
+  batches = batches.slice().sort(function (a, b) {
+    if ((a.date || '') < (b.date || '')) return -1;
+    if ((a.date || '') > (b.date || '')) return 1;
+    return (a.batchNo || '').localeCompare(b.batchNo || '');
+  });
+
   const rows = batches.map(function (b, idx) {
     const bHash = (b.batchNo || '').split('').reduce(function (acc, c) { return acc + c.charCodeAt(0); }, 0);
     const checkedBy = bHash % 2 === 0 ? 'Vishal' : 'Tejas';
@@ -916,8 +923,8 @@ function _buildAndPrint(batches, dateLabel) {
 
   document.getElementById('printAllTable').innerHTML =
     '<div class="print-header">Manufacturing &amp; Processing Records | LV Spices</div>'
-    + '<div class="print-subheader">Unit: LV Manufacturing &nbsp;|&nbsp; Location: Nashik</div>'
-    + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + ' &nbsp;|&nbsp; Printed: ' + new Date().toLocaleString('en-IN') + '</div>'
+    + '<div class="print-subheader">Unit: 12</div>'
+    + '<div class="print-meta">Date: ' + dateLabel + ' &nbsp;|&nbsp; Total Records: ' + batches.length + '</div>'
     + '<table>'
     + '<colgroup>'
     + '<col style="width:3%"><col style="width:8%"><col style="width:13%"><col style="width:8%">'

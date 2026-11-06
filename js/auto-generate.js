@@ -21055,29 +21055,43 @@ export function generateDateRangeBatches(startDateStr, endDateStr, onProgress = 
 export async function checkAndGenerateToday(firebaseService) {
   try {
     const todayISO = formatDateISO(new Date());
-    const [year, month, day] = todayISO.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
 
-    // If Sunday, no production
-    if (d.getDay() === 0) {
-      return { generated: 0, reason: 'Sunday - No Production Scheduled' };
+    // Build list of last 60 working days (Mon-Sat) up to today
+    const workingDays = [];
+    const cur = new Date(todayISO + 'T00:00:00');
+    for (let i = 0; i < 90 && workingDays.length < 60; i++) {
+      if (cur.getDay() !== 0) { // Skip Sundays
+        workingDays.push(formatDateISO(new Date(cur)));
+      }
+      cur.setDate(cur.getDate() - 1);
     }
 
-    // Check if batches already exist for today
-    const existing = await firebaseService.fetchBatches(todayISO, todayISO);
-    if (existing && existing.length > 0) {
-      return { generated: 0, existing: existing.length, reason: 'Batches already exist for today' };
+    // Fetch all batches for this 90-day window to find which dates already have data
+    const windowStart = workingDays[workingDays.length - 1]; // oldest
+    const existingBatches = await firebaseService.fetchBatches(windowStart, todayISO);
+    const datesWithData = new Set(existingBatches.map(b => b.date));
+
+    // Find missing working days
+    const missingDays = workingDays.filter(d => !datesWithData.has(d));
+
+    if (missingDays.length === 0) {
+      return { generated: 0, reason: 'All working days have data' };
     }
 
-    // Generate batches for today
-    const newBatches = generateDayBatches(todayISO);
-    if (!newBatches.length) {
-      return { generated: 0, reason: 'No products scheduled' };
+    // Generate and save missing days (in parallel batches of 5)
+    let totalGenerated = 0;
+    for (let i = 0; i < missingDays.length; i += 5) {
+      const chunk = missingDays.slice(i, i + 5);
+      await Promise.all(chunk.map(async (dateStr) => {
+        const batches = generateDayBatches(dateStr);
+        if (batches.length > 0) {
+          await firebaseService.batchSave(batches);
+          totalGenerated += batches.length;
+        }
+      }));
     }
 
-    // Save to Firestore
-    await firebaseService.batchSave(newBatches);
-    return { generated: newBatches.length, batches: newBatches };
+    return { generated: totalGenerated, missingDays };
   } catch (err) {
     console.error('Error in checkAndGenerateToday:', err);
     return { error: err.message };
